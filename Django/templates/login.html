@@ -1,0 +1,620 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReturnGuard · Sign In</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* =========================================================
+       YELLOW / WHITE / DARK THEME (Based on reference image)
+       ========================================================= */
+    :root {
+      --cream: #ffffff;
+      --cream-2: #f8f9fa;
+      --sand: #f1f3f5;
+
+      --coral: #facc15; /* Main Yellow Accent */
+      --coral-2: #fde047; /* Lighter Yellow */
+      --coral-soft: #fef9c3; /* Very Light Yellow */
+
+      --terracotta: #eab308; /* Darker Yellow/Gold */
+      --terracotta-2: #facc15;
+      --terracotta-soft: #fef08a;
+
+      --mustard: #eab308;
+      --mustard-soft: #fef9c3;
+
+      --plum: #1f2937; /* Dark Charcoal */
+      --plum-2: #374151;
+      --plum-soft: #f3f4f6;
+
+      --olive: #4b5563;
+      --olive-soft: #f3f4f6;
+
+      --ink: #111827; /* Near Black */
+      --ink-2: #374151; /* Dark Gray */
+      --muted: #6b7280; /* Medium Gray */
+      --line: rgba(17, 24, 39, 0.10);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    /* Background blobs */
+    body::before {
+      content: "";
+      position: fixed;
+      width: 780px;
+      height: 780px;
+      top: -320px;
+      right: -220px;
+      background: radial-gradient(circle at 30% 30%, #fef9c3, #fef08a);
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.75;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      width: 680px;
+      height: 680px;
+      bottom: -300px;
+      left: -240px;
+      background: radial-gradient(circle at 70% 70%, #f3f4f6, #e5e7eb);
+      border-radius: 50%;
+      filter: blur(130px);
+      opacity: 0.75;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    /* ---- wrapper ---- */
+    .login-wrapper {
+      width: 100%;
+      max-width: 470px;
+      position: relative;
+      z-index: 10;
+      animation: cardAppear 0.7s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    @keyframes cardAppear {
+      0%   { opacity: 0; transform: translateY(24px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    /* ---- login card ---- */
+    .login-card {
+      background: #ffffff;
+      border: 1px solid rgba(17, 24, 39, 0.08);
+      border-radius: 36px;
+      padding: 48px 44px 40px;
+      box-shadow:
+        0 40px 80px -30px rgba(17, 24, 39, 0.15),
+        0 4px 14px -4px rgba(17, 24, 39, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Corner yellow glow */
+    .login-card::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -100px;
+      top: -100px;
+      background: radial-gradient(circle, #fef08a 0%, #fef9c3 40%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Bottom-left soft gray glow */
+    .login-card::before {
+      content: "";
+      position: absolute;
+      width: 240px;
+      height: 240px;
+      left: -110px;
+      bottom: -120px;
+      background: radial-gradient(circle, #f3f4f6 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* =========================================================
+       BACK ARROW
+       ========================================================= */
+    .back-arrow {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1.5px solid rgba(17, 24, 39, 0.12);
+      color: var(--ink-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 15px;
+      transition: all 0.22s ease;
+      z-index: 5;
+    }
+
+    .back-arrow:hover {
+      background: #fff;
+      border-color: var(--coral);
+      color: var(--ink);
+      transform: translateX(-2px);
+      box-shadow: 0 8px 18px -6px rgba(250, 204, 21, 0.4);
+    }
+
+    .back-arrow i { font-size: 15px; }
+
+    /* ---- logo ---- */
+    .login-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 36px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .logo-img {
+      height: 44px;
+      width: auto;
+      display: block;
+    }
+
+    .logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 23px;
+      letter-spacing: -0.4px;
+      color: var(--ink);
+    }
+
+    .logo-text span {
+      background: linear-gradient(120deg, var(--coral), var(--terracotta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ---- header ---- */
+    .login-header {
+      margin-bottom: 30px;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+
+    .login-header h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+
+    .login-header p {
+      font-size: 14.5px;
+      color: var(--ink-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      line-height: 1.5;
+      margin-bottom: 0;
+      font-weight: 500;
+    }
+
+    .login-header p i { color: var(--coral); font-size: 13px; }
+
+    /* ---- form ---- */
+    .form-group {
+      margin-bottom: 22px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.9px;
+      color: var(--ink-2);
+      margin-bottom: 9px;
+      text-transform: uppercase;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper > i {
+      position: absolute;
+      left: 18px;
+      color: #9ca3af;
+      font-size: 15px;
+      transition: color 0.25s;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* inputs */
+    .input-wrapper input {
+      width: 100%;
+      background: #f9fafb;
+      border: 1.5px solid rgba(17, 24, 39, 0.12);
+      border-radius: 16px;
+      padding: 16px 18px 16px 50px;
+      font-size: 15px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--ink);
+      outline: none;
+      transition: all 0.22s ease;
+      letter-spacing: -0.1px;
+      font-weight: 500;
+      box-shadow: inset 0 1px 2px rgba(17, 24, 39, 0.02);
+    }
+
+    .input-wrapper input::placeholder {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .input-wrapper input:hover {
+      border-color: rgba(17, 24, 39, 0.25);
+      background: #fff;
+    }
+
+    .input-wrapper input:focus {
+      border-color: var(--coral);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15);
+    }
+
+    .input-wrapper input:focus ~ i { color: var(--coral); }
+
+    /* ---- password toggle ---- */
+    .toggle-password {
+      position: absolute;
+      right: 14px;
+      color: #9ca3af;
+      font-size: 15px;
+      cursor: pointer;
+      transition: color 0.2s;
+      z-index: 3;
+      background: transparent;
+      border: none;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    .toggle-password:hover { color: var(--ink); background: var(--coral-soft); }
+
+    /* ---- form options ---- */
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 24px;
+      font-size: 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .forgot-link {
+      color: var(--ink-2);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s;
+    }
+
+    .forgot-link:hover { color: var(--coral); }
+    .forgot-link i { font-size: 11px; }
+
+    /* ---- primary button ---- */
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--coral), var(--terracotta));
+      border: none;
+      color: #ffffff;
+      padding: 17px 30px;
+      border-radius: 16px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.1px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 18px 34px -12px rgba(250, 204, 21, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 44px -12px rgba(250, 204, 21, 0.75);
+    }
+
+    .btn-login:active { transform: translateY(0); }
+    .btn-login i { font-size: 15px; }
+
+    /* ---- footer ---- */
+    .login-footer {
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--ink-2);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 26px;
+      position: relative;
+      z-index: 2;
+      font-weight: 500;
+    }
+
+    .login-footer a {
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.2s;
+    }
+
+    .login-footer a:hover { color: var(--coral); }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .security-badge i { color: var(--olive); font-size: 11px; }
+
+    /* ---- validation ---- */
+    .input-wrapper input:invalid:not(:placeholder-shown) {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+
+    .input-wrapper input:valid:not(:placeholder-shown) {
+      border-color: #10b981;
+    }
+
+    /* ---- messages ---- */
+    .rg-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 26px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .rg-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 16px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      animation: alertIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    @keyframes alertIn {
+      0%   { opacity: 0; transform: translateY(-6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .rg-alert-content { display: flex; align-items: center; gap: 10px; }
+    .rg-alert-content i { font-size: 14px; }
+
+    .rg-alert-error   { background: #fef2f2; color: #991b1b; border-color: rgba(239, 68, 68, 0.2); }
+    .rg-alert-success { background: #f0fdf4; color: #166534; border-color: rgba(34, 197, 94, 0.2); }
+    .rg-alert-warning { background: var(--mustard-soft); color: #854d0e; border-color: rgba(250, 204, 21, 0.3); }
+    .rg-alert-info    { background: var(--plum-soft); color: var(--plum); border-color: rgba(17, 24, 39, 0.1); }
+
+    .rg-alert-close {
+      background: transparent;
+      border: none;
+      color: inherit;
+      opacity: 0.55;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 4px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .rg-alert-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.04); }
+
+    /* ---- responsive ---- */
+    @media (max-width: 520px) {
+      .login-card { padding: 36px 26px 32px; border-radius: 28px; }
+      .login-header h2 { font-size: 26px; }
+      .logo-text { font-size: 20px; }
+      .logo-img { height: 38px; }
+      .back-arrow { top: 16px; left: 16px; width: 36px; height: 36px; }
+    }
+
+    @media (max-width: 380px) {
+      .login-card { padding: 30px 20px 26px; }
+      .input-wrapper input { padding: 14px 14px 14px 46px; font-size: 14px; }
+      .btn-login { padding: 15px 22px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+    <div class="login-card">
+
+      <!-- ================= BACK ARROW ================= -->
+      <a href="/myapp/" class="back-arrow" aria-label="Back to home" title="Back to home">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+
+      <!-- ================= DJANGO MESSAGES ================= -->
+      {% if messages %}
+      <div class="rg-messages">
+        {% for m in messages %}
+          <div class="rg-alert rg-alert-{% if m.tags == 'error' %}error{% elif m.tags == 'success' %}success{% elif m.tags == 'warning' %}warning{% else %}info{% endif %}">
+            <div class="rg-alert-content">
+              <i class="fa-solid
+                {% if m.tags == 'error' %}fa-circle-exclamation
+                {% elif m.tags == 'success' %}fa-circle-check
+                {% elif m.tags == 'warning' %}fa-triangle-exclamation
+                {% else %}fa-circle-info{% endif %}"></i>
+              <span>{{ m }}</span>
+            </div>
+            <button type="button" class="rg-alert-close" aria-label="Dismiss"
+                    onclick="this.closest('.rg-alert').style.display='none'">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- logo -->
+      <div class="login-logo">
+        <img src="{% static 'images/returnlogo.png' %}" alt="ReturnGuard" class="logo-img">
+        <div class="logo-text">Return<span>Guard</span></div>
+      </div>
+
+      <!-- header -->
+      <div class="login-header">
+        <h2>Welcome back</h2>
+        <p><i class="fa-solid fa-shield-halved"></i> Sign in to your return intelligence dashboard</p>
+      </div>
+
+      <!-- form -->
+      <form action="/myapp/loginpost" method="POST" id="loginForm" autocomplete="off">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="email">Username / Email</label>
+          <div class="input-wrapper">
+            <i class="fa-regular fa-envelope"></i>
+            <input type="text" id="email" name="email" placeholder="name@company.com" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-key"></i>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="••••••••••••"
+              required>
+            <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <a href="/myapp/forgotpassword" class="forgot-link">
+            <i class="fa-solid fa-rotate-right"></i> Forgot password?
+          </a>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
+          Sign in
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- footer -->
+      <div class="login-footer">
+        <div>Don't have an account? <a href="/myapp/seller_register">Sign Up</a></div>
+        <div class="security-badge">
+          <i class="fa-solid fa-lock"></i>
+          256‑bit encryption · SOC 2 compliant
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Show / hide password
+      const toggleBtn = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+
+      if (toggleBtn && passwordInput) {
+        toggleBtn.addEventListener('click', function () {
+          const isPassword = passwordInput.getAttribute('type') === 'password';
+          passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+          const icon = this.querySelector('i');
+          icon.classList.toggle('fa-eye', !isPassword);
+          icon.classList.toggle('fa-eye-slash', isPassword);
+        });
+      }
+    })();
+  </script>
+
+</body>
+</html>

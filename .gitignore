@@ -1,0 +1,25 @@
+# --- OS & IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# --- Django / Python ---
+Django/venv/
+Django/__pycache__/
+Django/*/__pycache__/
+Django/db.sqlite3
+Django/media/
+Django/.env
+Django/*.log
+Django/*.pkl
+Django/*.joblib
+
+# --- Flutter ---
+Flutter/.dart_tool/
+Flutter/build/
+Flutter/.flutter-plugins
+Flutter/.flutter-plugins-dependencies
+Flutter/android/key.properties
+Flutter/android/app/google-services.json

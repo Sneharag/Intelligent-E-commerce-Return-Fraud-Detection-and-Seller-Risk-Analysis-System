@@ -1,0 +1,671 @@
+{% extends "admin/admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Feedback · ReturnGuard Admin{% endblock %}
+{% block page_title %}Feedback{% endblock %}
+{% block page_subtitle %}Feedback and ratings submitted by users{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Feedback page — page-specific styles only.
+     Colors, layout, buttons, pagination, table shell,
+     and status colors come from admin_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  /* ================= TOOLBAR ================= */
+  .fb-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .fb-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+    transform: translateY(-1px);
+  }
+
+  .filter-chip.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  /* search box — right-aligned */
+  .fb-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 0 340px;
+    min-width: 220px;
+    margin-left: auto;
+  }
+
+  .fb-search > i {
+    position: absolute;
+    left: 15px;
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+    transition: color 0.2s;
+    z-index: 2;
+  }
+
+  .fb-search input {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 18px 12px 42px;
+    font-size: 14.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.15);
+  }
+
+  .fb-search input::placeholder { color: #9ca3af; font-weight: 400; }
+
+  .fb-search input:focus {
+    border-color: var(--yellow);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .fb-search input:focus ~ i { color: var(--navy); }
+
+  .fb-search-clear {
+    position: absolute;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.18s;
+    z-index: 2;
+  }
+
+  .fb-search-clear:hover {
+    color: var(--navy);
+    background: var(--yellow-soft);
+  }
+
+  .fb-search.has-value .fb-search-clear { display: flex; }
+
+  /* live result count */
+  .search-result-info {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .search-result-info.show { display: flex; }
+
+  .search-result-info strong { color: var(--navy); font-weight: 800; }
+  .search-result-info i { font-size: 11px; color: var(--yellow-deep); }
+
+  /* "no matches" row */
+  .no-matches-row td {
+    background: var(--yellow-soft) !important;
+    text-align: center;
+    padding: 40px 20px !important;
+    border-radius: 14px;
+  }
+
+  .no-matches-row .nm-inner {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+
+  .no-matches-row .nm-inner i { font-size: 28px; color: rgba(15, 23, 42, 0.25); }
+
+  .no-matches-row .nm-inner strong {
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  /* ================= PANEL ================= */
+  .fb-panel {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 26px;
+    box-shadow: 0 6px 20px -14px rgba(15, 23, 42, 0.1);
+    overflow: hidden;
+  }
+
+  .fb-table-wrap {
+    overflow-x: auto;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+
+  .fb-table-wrap::-webkit-scrollbar { height: 8px; }
+  .fb-table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .fb-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+    border-radius: 4px;
+  }
+
+  .fb-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    min-width: 900px;
+  }
+
+  .fb-table th {
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--navy);
+    font-weight: 800;
+    text-align: left;
+    padding: 6px 18px 12px;
+    white-space: nowrap;
+  }
+
+  .fb-table td {
+    background: #fff;
+    padding: 18px;
+    font-size: 15px;
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .fb-table tr td:first-child {
+    border-left: 1px solid var(--line);
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+
+  .fb-table tr td:last-child {
+    border-right: 1px solid var(--line);
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+
+  /* NOTE: table row hover intentionally disabled */
+
+  /* user cell */
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 200px;
+  }
+
+  .user-cell-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 17px;
+    font-family: 'Outfit', sans-serif;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  /* Avatar rotation — yellow + real navy blue only */
+  .fb-table tbody tr:nth-child(5n+1) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--navy);
+  }
+  .fb-table tbody tr:nth-child(5n+2) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--navy), var(--navy-3));
+    color: #ffffff;
+  }
+  .fb-table tbody tr:nth-child(5n+3) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--yellow-deep), #ca8a04);
+    color: var(--navy);
+  }
+  .fb-table tbody tr:nth-child(5n+4) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--navy-2), var(--navy));
+    color: #ffffff;
+  }
+  .fb-table tbody tr:nth-child(5n+5) .user-cell-avatar {
+    background: linear-gradient(135deg, #fbbf24, var(--yellow));
+    color: var(--navy);
+  }
+
+  .user-name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 15.5px;
+    line-height: 1.25;
+  }
+
+  .user-email {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-weight: 600;
+  }
+
+  /* feedback message cell */
+  .feedback-cell {
+    min-width: 340px;
+    max-width: 540px;
+  }
+
+  .feedback-text {
+    color: var(--ink-2);
+    font-size: 14.5px;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-weight: 500;
+  }
+
+  .feedback-text.expanded {
+    -webkit-line-clamp: unset;
+    display: block;
+  }
+
+  .feedback-toggle {
+    background: transparent;
+    border: none;
+    color: var(--navy);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: color 0.2s;
+  }
+
+  .feedback-toggle:hover { color: var(--yellow-deep); }
+
+  /* date cell */
+  .date-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    white-space: nowrap;
+    min-width: 150px;
+  }
+
+  .date-primary {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .date-primary i { font-size: 12px; color: var(--yellow-deep); }
+
+  .date-time {
+    font-size: 12.5px;
+    color: var(--muted);
+    padding-left: 19px;
+    font-weight: 500;
+  }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 46px;
+    color: rgba(15, 23, 42, 0.2);
+    margin-bottom: 18px;
+    display: block;
+  }
+
+  .empty-state h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .empty-state p { font-size: 14.5px; }
+
+  /* pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .pagination-info {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .pagination-info strong { color: var(--ink); font-weight: 800; }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .page-btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .page-btn:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+  }
+
+  .page-btn.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  .page-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  @media (max-width: 720px) {
+    .fb-toolbar { flex-direction: column; align-items: stretch; }
+    .fb-search { flex: 1 1 100%; margin-left: 0; }
+    .feedback-cell { min-width: 240px; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ================= TOOLBAR ================= -->
+<div class="fb-toolbar">
+
+  <div class="fb-toolbar-left">
+    <a href="?sort=recent" class="filter-chip {% if not request.GET.sort or request.GET.sort == 'recent' %}active{% endif %}">
+      <i class="fa-solid fa-clock"></i> Most recent
+    </a>
+    <a href="?sort=oldest" class="filter-chip {% if request.GET.sort == 'oldest' %}active{% endif %}">
+      <i class="fa-solid fa-hourglass-half"></i> Oldest first
+    </a>
+    <a href="?sort=user" class="filter-chip {% if request.GET.sort == 'user' %}active{% endif %}">
+      <i class="fa-solid fa-user"></i> By user
+    </a>
+  </div>
+
+  <!-- SEARCH BOX -->
+  <div class="fb-search" id="fbSearchWrap">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" id="fbSearch" placeholder="Search by user or feedback…" autocomplete="off">
+    <button type="button" class="fb-search-clear" id="fbSearchClear" aria-label="Clear search">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+</div>
+
+<!-- live result info -->
+<div class="search-result-info" id="searchResultInfo">
+  <i class="fa-solid fa-filter"></i>
+  Showing <strong id="matchCount">0</strong> matching entries
+</div>
+
+<!-- ================= FEEDBACK TABLE ================= -->
+<div class="fb-panel">
+
+  {% if feedbacks %}
+  <div class="fb-table-wrap">
+    <table class="fb-table" id="fbTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Feedback</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in feedbacks %}
+        <tr>
+
+          <!-- User -->
+          <td>
+            <div class="user-cell">
+              <div class="user-cell-avatar">{{ f.CUSTOMER.name|slice:":1" }}</div>
+              <div>
+                <div class="user-name">{{ f.CUSTOMER.name }}</div>
+                <div class="user-email">{{ f.CUSTOMER.email|default:"" }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Feedback -->
+          <td>
+            <div class="feedback-cell">
+              <div class="feedback-text" id="fb-text-{{ f.id }}">{{ f.feedback }}</div>
+              {% if f.feedback|length > 140 %}
+                <button type="button" class="feedback-toggle" data-target="fb-text-{{ f.id }}">
+                  Read more
+                </button>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Date -->
+          <td>
+            <div class="date-cell">
+              <div class="date-primary">
+                <i class="fa-solid fa-calendar-day"></i>
+                {{ f.date}}
+              </div>
+
+            </div>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing <strong>1–{{ feedbacks|length }}</strong> of <strong>{{ total_feedback|default:feedbacks|length }}</strong> entries
+    </div>
+
+    <div class="pagination-controls">
+      <a href="?page={{ page_obj.previous_page_number }}" class="page-btn {% if not page_obj.has_previous %}disabled{% endif %}">
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+      <a href="?page=1" class="page-btn active">1</a>
+      <a href="?page=2" class="page-btn">2</a>
+      <a href="?page=3" class="page-btn">3</a>
+      <a href="?page={{ page_obj.next_page_number }}" class="page-btn {% if not page_obj.has_next %}disabled{% endif %}">
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+    </div>
+  </div>
+
+  {% else %}
+
+  <div class="empty-state">
+    <i class="fa-solid fa-comment-slash"></i>
+    <h3>No feedback yet</h3>
+    <p>Feedback submitted by users will appear here.</p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ── Live search filter ──
+    const input    = document.getElementById('fbSearch');
+    const clearBtn = document.getElementById('fbSearchClear');
+    const wrap     = document.getElementById('fbSearchWrap');
+    const info     = document.getElementById('searchResultInfo');
+    const countEl  = document.getElementById('matchCount');
+    const table    = document.getElementById('fbTable');
+
+    if (input && table) {
+      const tbody = table.querySelector('tbody');
+
+      const existing = tbody.querySelector('.no-matches-row');
+      if (existing) existing.remove();
+
+      function applyFilter() {
+        const term = input.value.toLowerCase().trim();
+        const rows = tbody.querySelectorAll('tr:not(.no-matches-row)');
+
+        let visible = 0;
+
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          const match = term === '' || text.includes(term);
+          row.style.display = match ? '' : 'none';
+          if (match) visible++;
+        });
+
+        wrap.classList.toggle('has-value', term.length > 0);
+
+        if (term.length > 0) {
+          info.classList.add('show');
+          countEl.textContent = visible;
+        } else {
+          info.classList.remove('show');
+        }
+
+        const noMatchRow = tbody.querySelector('.no-matches-row');
+        if (visible === 0 && term.length > 0) {
+          if (!noMatchRow) {
+            const tr = document.createElement('tr');
+            tr.className = 'no-matches-row';
+            tr.innerHTML = `
+              <td colspan="3">
+                <div class="nm-inner">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <strong>No feedback matches "${term}"</strong>
+                  <span style="font-size:12.5px;">Try a different user or keyword.</span>
+                </div>
+              </td>`;
+            tbody.appendChild(tr);
+          } else {
+            noMatchRow.querySelector('strong').textContent = `No feedback matches "${term}"`;
+          }
+        } else if (noMatchRow) {
+          noMatchRow.remove();
+        }
+      }
+
+      input.addEventListener('input', applyFilter);
+
+      clearBtn.addEventListener('click', function () {
+        input.value = '';
+        applyFilter();
+        input.focus();
+      });
+
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          input.value = '';
+          applyFilter();
+        }
+      });
+    }
+
+    // ── "Read more" / "Show less" toggle for long feedback ──
+    document.querySelectorAll('.feedback-toggle').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const target = document.getElementById(this.dataset.target);
+        if (!target) return;
+
+        const expanded = target.classList.toggle('expanded');
+        this.textContent = expanded ? 'Show less' : 'Read more';
+      });
+    });
+  })();
+</script>
+{% endblock %}

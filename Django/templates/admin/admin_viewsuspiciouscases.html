@@ -1,0 +1,1070 @@
+{% extends "admin/admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Suspicious Cases · ReturnGuard Admin{% endblock %}
+{% block page_title %}Suspicious Cases{% endblock %}
+{% block page_subtitle %}Fraud-flagged returns that need your review{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Suspicious Cases page — page-specific styles only.
+     Colors, layout, buttons, pagination, table shell,
+     and status colors come from admin_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  /* ================= SUMMARY STRIP ================= */
+  .fraud-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  @media (max-width: 1000px) { .fraud-stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px)  { .fraud-stats { grid-template-columns: 1fr; } }
+
+  .fraud-stat {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 20px -14px rgba(15, 23, 42, 0.1);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .fraud-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px -16px rgba(15, 23, 42, 0.2);
+  }
+
+  .fraud-stat::after {
+    content: "";
+    position: absolute;
+    width: 140px; height: 140px;
+    right: -50px; top: -50px;
+    background: radial-gradient(circle, var(--yellow-soft), transparent 70%);
+    pointer-events: none;
+  }
+
+  .fraud-stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--yellow-soft);
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .fraud-stat-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .fraud-stat-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.8px;
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 6px;
+  }
+
+  .fraud-stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fraud-stat-sub i { font-size: 10.5px; }
+
+  .fraud-stat.danger .fraud-stat-icon { background: var(--coral-soft); color: #991b1b; }
+  .fraud-stat.danger::after { background: radial-gradient(circle, var(--coral-soft), transparent 70%); }
+
+  .fraud-stat.warn .fraud-stat-icon { background: var(--amber-soft); color: #92400e; }
+  .fraud-stat.warn::after { background: radial-gradient(circle, var(--amber-soft), transparent 70%); }
+
+  .fraud-stat.safe .fraud-stat-icon { background: var(--green-soft); color: #166534; }
+  .fraud-stat.safe::after { background: radial-gradient(circle, var(--green-soft), transparent 70%); }
+
+  /* ================= TOOLBAR ================= */
+  .fraud-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .fraud-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+    transform: translateY(-1px);
+  }
+
+  .filter-chip.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  .filter-chip .count {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.06);
+    line-height: 1;
+  }
+
+  .filter-chip.active .count { background: rgba(15, 23, 42, 0.15); }
+
+  /* search */
+  .fraud-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 0 340px;
+    min-width: 220px;
+    margin-left: auto;
+  }
+
+  .fraud-search > i {
+    position: absolute;
+    left: 15px;
+    color: var(--muted);
+    font-size: 13.5px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .fraud-search input {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 11px 42px 11px 40px;
+    font-size: 13.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.15);
+  }
+
+  .fraud-search input::placeholder { color: #9ca3af; font-weight: 400; }
+  .fraud-search input:focus {
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .fraud-search-clear {
+    position: absolute;
+    right: 10px;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.18s;
+    z-index: 2;
+  }
+
+  .fraud-search-clear:hover { color: var(--navy); background: var(--yellow-soft); }
+  .fraud-search.has-value .fraud-search-clear { display: flex; }
+
+  /* live result count */
+  .search-result-info {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .search-result-info.show { display: flex; }
+  .search-result-info strong { color: var(--navy); font-weight: 800; }
+  .search-result-info i { font-size: 11px; color: var(--yellow-deep); }
+
+  /* "no matches" row */
+  .no-matches-row td {
+    background: var(--yellow-soft) !important;
+    text-align: center;
+    padding: 40px 20px !important;
+    border-radius: 14px;
+  }
+
+  .no-matches-row .nm-inner {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+
+  .no-matches-row .nm-inner i { font-size: 28px; color: rgba(15, 23, 42, 0.25); }
+  .no-matches-row .nm-inner strong {
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  /* ================= PANEL ================= */
+  .fraud-panel {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 6px 20px -14px rgba(15, 23, 42, 0.1);
+    overflow: hidden;
+  }
+
+  .fraud-table-wrap {
+    overflow-x: auto;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+
+  .fraud-table-wrap::-webkit-scrollbar { height: 8px; }
+  .fraud-table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .fraud-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+    border-radius: 4px;
+  }
+
+  .fraud-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    min-width: 1200px;
+  }
+
+  .fraud-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--navy);
+    font-weight: 800;
+    text-align: left;
+    padding: 4px 16px 10px;
+    white-space: nowrap;
+  }
+
+  .fraud-table td {
+    background: #fff;
+    padding: 16px;
+    font-size: 13.5px;
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    font-weight: 500;
+  }
+
+  .fraud-table tr td:first-child {
+    border-left: 1px solid var(--line);
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+
+  .fraud-table tr td:last-child {
+    border-right: 1px solid var(--line);
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+
+  /* case cell */
+  .case-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 180px;
+  }
+
+  .case-avatar {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    font-family: 'Outfit', sans-serif;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--coral), #b91c1c);
+  }
+
+  .case-name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .case-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* product cell */
+  .product-cell { min-width: 180px; }
+  .product-name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 13.5px;
+    line-height: 1.35;
+  }
+  .product-meta {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-weight: 600;
+  }
+
+  /* reason cell */
+  .reason-cell {
+    max-width: 260px;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+
+  .reason-tag {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: var(--yellow-soft);
+    color: var(--navy);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  /* risk meter */
+  .risk-meter {
+    min-width: 130px;
+  }
+
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    margin-bottom: 6px;
+  }
+
+  .risk-fraud {
+    background: var(--coral-soft);
+    color: #991b1b;
+  }
+
+  .risk-safe {
+    background: var(--green-soft);
+    color: #166534;
+  }
+
+  .risk-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(15, 23, 42, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .risk-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--coral), #b91c1c);
+  }
+
+  .risk-bar.safe > span {
+    background: linear-gradient(90deg, var(--green), #34d399);
+  }
+
+  .risk-pct {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    margin-top: 5px;
+    letter-spacing: 0.3px;
+  }
+
+  /* proof / image */
+  .proof-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--yellow-soft);
+    color: var(--navy);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    white-space: nowrap;
+  }
+
+  .proof-link:hover {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--navy);
+    border-color: transparent;
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .proof-link i { font-size: 11px; }
+
+  .proof-missing {
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* action buttons */
+  .actions-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 9px;
+    font-size: 11.5px;
+    font-weight: 800;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+
+  .btn-view {
+    background: var(--yellow-soft);
+    color: var(--navy);
+    border-color: rgba(250, 204, 21, 0.5);
+  }
+
+  .btn-view:hover {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .btn-dismiss {
+    background: #ffffff;
+    color: #166534;
+    border-color: var(--green);
+  }
+
+  .btn-dismiss:hover {
+    background: linear-gradient(135deg, var(--green), #34d399);
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 8px 16px -6px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-action i { font-size: 11px; }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 42px;
+    color: rgba(15, 23, 42, 0.2);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .empty-state h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .empty-state p { font-size: 13.5px; }
+
+  /* pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .pagination-info {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .pagination-info strong { color: var(--ink); font-weight: 800; }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .page-btn:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+  }
+
+  .page-btn.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  .page-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+  /* responsive */
+  @media (max-width: 720px) {
+    .fraud-toolbar { flex-direction: column; align-items: stretch; }
+    .fraud-search { flex: 1 1 100%; margin-left: 0; }
+  }
+  /* ================= BEHAVIORAL RISK ================= */
+  .risk-meter {
+    min-width: 130px;
+  }
+
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    margin-bottom: 6px;
+  }
+
+  .risk-fraud { background: var(--coral-soft); color: #991b1b; }
+  .risk-warn  { background: var(--amber-soft); color: #92400e; }
+  .risk-safe  { background: var(--green-soft); color: #166534; }
+
+  .risk-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(15, 23, 42, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .risk-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--coral), #b91c1c);
+  }
+
+  .risk-bar.warn > span {
+    background: linear-gradient(90deg, var(--amber), #d97706);
+  }
+
+  .risk-bar.safe > span {
+    background: linear-gradient(90deg, var(--green), #34d399);
+  }
+
+  .risk-pct {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    margin-top: 5px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ================= ACTION ICONS ================= */
+  .actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    text-decoration: none;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+
+  .btn-block {
+    background: var(--coral-soft);
+    color: #991b1b;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .btn-block:hover {
+    background: linear-gradient(135deg, var(--coral), #b91c1c);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 8px 16px -6px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-unblock {
+    background: var(--green-soft);
+    color: #166534;
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  .btn-unblock:hover {
+    background: linear-gradient(135deg, var(--green), #34d399);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 8px 16px -6px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-icon i { font-size: 12.5px; }
+
+  /* user status pill in name cell */
+  .user-blocked-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: var(--coral-soft);
+    color: #991b1b;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ================= SUMMARY CARDS ================= -->
+<div class="fraud-stats">
+
+  <div class="fraud-stat danger">
+    <div class="fraud-stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div class="fraud-stat-label">Flagged Cases</div>
+    <div class="fraud-stat-value">{{ flagged_count|default:"0" }}</div>
+    <div class="fraud-stat-sub">
+      <i class="fa-solid fa-robot"></i>
+      Detected by ML model
+    </div>
+  </div>
+
+  <div class="fraud-stat warn">
+    <div class="fraud-stat-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    <div class="fraud-stat-label">Awaiting Review</div>
+    <div class="fraud-stat-value">{{ pending_review|default:"0" }}</div>
+    <div class="fraud-stat-sub">
+      <i class="fa-solid fa-hourglass-half"></i>
+      Not yet actioned
+    </div>
+  </div>
+
+  <div class="fraud-stat safe">
+    <div class="fraud-stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="fraud-stat-label">Confirmed Fraud</div>
+    <div class="fraud-stat-value">{{ confirmed_fraud|default:"0" }}</div>
+    <div class="fraud-stat-sub">
+      <i class="fa-solid fa-gavel"></i>
+      Action taken
+    </div>
+  </div>
+
+  <div class="fraud-stat">
+    <div class="fraud-stat-icon"><i class="fa-solid fa-rotate-left"></i></div>
+    <div class="fraud-stat-label">Total Returns</div>
+    <div class="fraud-stat-value">{{ total_returns|default:"0" }}</div>
+    <div class="fraud-stat-sub">
+      <i class="fa-solid fa-percent"></i>
+      {{ fraud_rate|default:"0" }}% flagged
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= TOOLBAR ================= -->
+<div class="fraud-toolbar">
+
+  <div class="fraud-toolbar-left">
+    <a href="?filter=all" class="filter-chip {% if filter_type == 'all' or not filter_type %}active{% endif %}">
+      <i class="fa-solid fa-list"></i> All
+      <span class="count">{{ all_count|default:suspicious|length }}</span>
+    </a>
+    <a href="?filter=fraud" class="filter-chip {% if filter_type == 'fraud' %}active{% endif %}">
+      <i class="fa-solid fa-triangle-exclamation"></i> Fraud
+      <span class="count">{{ fraud_count|default:"0" }}</span>
+    </a>
+    <a href="?filter=safe" class="filter-chip {% if filter_type == 'safe' %}active{% endif %}">
+      <i class="fa-solid fa-shield-halved"></i> Safe
+      <span class="count">{{ safe_count|default:"0" }}</span>
+    </a>
+  </div>
+
+  <div class="fraud-search" id="fraudSearchWrap">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" id="fraudSearch" placeholder="Search by customer, product, order…" autocomplete="off">
+    <button type="button" class="fraud-search-clear" id="fraudSearchClear" aria-label="Clear search">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+</div>
+
+<div class="search-result-info" id="searchResultInfo">
+  <i class="fa-solid fa-filter"></i>
+  Showing <strong id="matchCount">0</strong> matching cases
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="fraud-panel">
+
+  {% if suspicious %}
+  <div class="fraud-table-wrap">
+    <table class="fraud-table" id="fraudTable">
+      <thead>
+        <tr>
+          <th>Case</th>
+          <th>Product</th>
+          <th>Return Reason</th>
+          <th>Risk Score</th>
+          <th>Proof</th>
+          <th>Date</th>
+{#          <th>Actions</th>#}
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in suspicious %}
+        <tr>
+
+          <!-- Case: customer + order -->
+          <td>
+            <div class="case-cell">
+              <div class="case-avatar">{{ s.customer_name|slice:":1" }}</div>
+              <div>
+                <div class="case-name">{{ s.customer_name }}</div>
+                <div class="case-sub">Order #{{ s.order_id }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Product -->
+          <td>
+            <div class="product-cell">
+              <div class="product-name">{{ s.product_name }}</div>
+              <div class="product-meta">Sold by {{ s.seller_name }}</div>
+            </div>
+          </td>
+
+          <!-- Return reason -->
+          <td>
+            <div class="reason-cell">
+              <div class="reason-tag">{{ s.return_reason|truncatechars:30 }}</div>
+            </div>
+          </td>
+
+          <!-- Risk score -->
+          <td>
+            <div class="risk-meter">
+              {% if s.is_fraud %}
+                <div class="risk-badge risk-fraud">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Fraud
+                </div>
+                <div class="risk-bar"><span style="width: {{ s.confidence_pct }}%;"></span></div>
+              {% else %}
+                <div class="risk-badge risk-safe">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Safe
+                </div>
+                <div class="risk-bar safe"><span style="width: {{ s.confidence_pct }}%;"></span></div>
+              {% endif %}
+              <div class="risk-pct">{{ s.confidence_pct }}% confidence</div>
+            </div>
+          </td>
+
+          <!-- Proof image -->
+          <td>
+            {% if s.return_image %}
+              <a href="{{ s.return_image }}" target="_blank" class="proof-link">
+                <i class="fa-solid fa-image"></i> View
+              </a>
+            {% else %}
+              <span class="proof-missing">No proof</span>
+            {% endif %}
+          </td>
+
+          <!-- Date -->
+          <td>
+            <span style="font-size:13px; color: var(--muted); font-weight:600; white-space:nowrap;">
+              {{ s.return_date }}
+            </span>
+          </td>
+
+          <!-- Actions -->
+{#          <td>#}
+{#            <div class="actions-cell">#}
+{#              <a href="/myapp/admin_view_return_details/{{ s.id }}" class="btn-action btn-view">#}
+{#                <i class="fa-solid fa-eye"></i> Details#}
+{#              </a>#}
+{#              <a href="/myapp/admin_dismiss_case/{{ s.id }}"#}
+{#                 class="btn-action btn-dismiss"#}
+{#                 onclick="return confirm('Mark this case as safe and dismiss it?');">#}
+{#                <i class="fa-solid fa-check"></i> Dismiss#}
+{#              </a>#}
+{#            </div>#}
+{#          </td>#}
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing <strong>1–{{ suspicious|length }}</strong> of <strong>{{ total_count|default:suspicious|length }}</strong> cases
+    </div>
+
+    <div class="pagination-controls">
+     {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}{% if filter_type %}&filter={{ filter_type }}{% endif %}"
+     class="page-btn">
+    <i class="fa-solid fa-chevron-left"></i>
+  </a>
+{% else %}
+  <span class="page-btn disabled">
+    <i class="fa-solid fa-chevron-left"></i>
+  </span>
+{% endif %}
+
+<!-- ... page numbers ... -->
+
+
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <a href="?page={{ num }}{% if filter_type %}&filter={{ filter_type }}{% endif %}" class="page-btn active">{{ num }}</a>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?page={{ num }}{% if filter_type %}&filter={{ filter_type }}{% endif %}" class="page-btn">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+
+     {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}{% if filter_type %}&filter={{ filter_type }}{% endif %}"
+     class="page-btn">
+    <i class="fa-solid fa-chevron-right"></i>
+  </a>
+{% else %}
+  <span class="page-btn disabled">
+    <i class="fa-solid fa-chevron-right"></i>
+  </span>
+{% endif %}
+    </div>
+  </div>
+
+  {% else %}
+
+  <!-- Empty state -->
+  <div class="empty-state">
+    <i class="fa-solid fa-shield-halved"></i>
+    <h3>No suspicious cases</h3>
+    <p>All returns are looking clean — no fraud detected.</p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const input    = document.getElementById('fraudSearch');
+    const clearBtn = document.getElementById('fraudSearchClear');
+    const wrap     = document.getElementById('fraudSearchWrap');
+    const info     = document.getElementById('searchResultInfo');
+    const countEl  = document.getElementById('matchCount');
+    const table    = document.getElementById('fraudTable');
+
+    if (!input || !table) return;
+
+    const tbody = table.querySelector('tbody');
+    const existing = tbody.querySelector('.no-matches-row');
+    if (existing) existing.remove();
+
+    function applyFilter() {
+      const term = input.value.toLowerCase().trim();
+      const rows = tbody.querySelectorAll('tr:not(.no-matches-row)');
+      let visible = 0;
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const match = term === '' || text.includes(term);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+
+      wrap.classList.toggle('has-value', term.length > 0);
+
+      if (term.length > 0) {
+        info.classList.add('show');
+        countEl.textContent = visible;
+      } else {
+        info.classList.remove('show');
+      }
+
+      const noMatchRow = tbody.querySelector('.no-matches-row');
+      if (visible === 0 && term.length > 0) {
+        if (!noMatchRow) {
+          const tr = document.createElement('tr');
+          tr.className = 'no-matches-row';
+          tr.innerHTML = `
+            <td colspan="7">
+              <div class="nm-inner">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <strong>No cases match "${term}"</strong>
+                <span style="font-size:12.5px;">Try a different customer, product, or order.</span>
+              </div>
+            </td>`;
+          tbody.appendChild(tr);
+        } else {
+          noMatchRow.querySelector('strong').textContent = `No cases match "${term}"`;
+        }
+      } else if (noMatchRow) {
+        noMatchRow.remove();
+      }
+    }
+
+    input.addEventListener('input', applyFilter);
+
+    clearBtn.addEventListener('click', function () {
+      input.value = '';
+      applyFilter();
+      input.focus();
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        input.value = '';
+        applyFilter();
+      }
+    });
+  })();
+</script>
+{% endblock %}

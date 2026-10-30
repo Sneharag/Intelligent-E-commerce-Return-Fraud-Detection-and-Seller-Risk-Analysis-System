@@ -1,0 +1,701 @@
+{% extends "admin/admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Verified Sellers · ReturnGuard Admin{% endblock %}
+{% block page_title %}Verified Sellers{% endblock %}
+{% block page_subtitle %}Sellers approved and trusted on the platform{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Verified Sellers page — page-specific styles only.
+     Colors, layout, buttons, pagination, table shell,
+     and status colors come from admin_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  /* ================= TOOLBAR ================= */
+  .verified-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .verified-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* verified tag — yellow accent */
+  .verified-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg, var(--yellow-soft), #fef4dd);
+    color: var(--navy);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 6px 16px -10px rgba(250, 204, 21, 0.55);
+  }
+
+  .verified-tag i { font-size: 13px; color: var(--yellow-deep); }
+
+  /* ── SEARCH BOX — right-aligned ── */
+  .verified-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 0 340px;
+    min-width: 220px;
+    margin-left: auto;
+  }
+
+  .verified-search > i {
+    position: absolute;
+    left: 15px;
+    color: var(--muted);
+    font-size: 13.5px;
+    pointer-events: none;
+    transition: color 0.2s;
+    z-index: 2;
+  }
+
+  .verified-search input {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 11px 42px 11px 40px;
+    font-size: 13.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.15);
+  }
+
+  .verified-search input::placeholder { color: #9ca3af; font-weight: 400; }
+
+  .verified-search input:hover { border-color: var(--navy-3); }
+
+  .verified-search input:focus {
+    border-color: var(--yellow);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .verified-search input:focus ~ i { color: var(--navy); }
+
+  .verified-search-clear {
+    position: absolute;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.18s;
+    z-index: 2;
+  }
+
+  .verified-search-clear:hover {
+    color: var(--navy);
+    background: var(--yellow-soft);
+  }
+
+  .verified-search.has-value .verified-search-clear { display: flex; }
+
+  /* live result count */
+  .search-result-info {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .search-result-info.show { display: flex; }
+
+  .search-result-info strong { color: var(--navy); font-weight: 800; }
+
+  .search-result-info i { font-size: 11px; color: var(--yellow-deep); }
+
+  /* "no matches" row */
+  .no-matches-row td {
+    background: var(--yellow-soft) !important;
+    text-align: center;
+    padding: 40px 20px !important;
+    border-radius: 14px;
+  }
+
+  .no-matches-row .nm-inner {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+
+  .no-matches-row .nm-inner i {
+    font-size: 28px;
+    color: rgba(15, 23, 42, 0.25);
+  }
+
+  .no-matches-row .nm-inner strong {
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  /* ================= PANEL ================= */
+  .verified-panel {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 6px 20px -14px rgba(15, 23, 42, 0.1);
+    overflow: hidden;
+  }
+
+  .verified-table-wrap {
+    overflow-x: auto;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+
+  .verified-table-wrap::-webkit-scrollbar { height: 8px; }
+  .verified-table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .verified-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+    border-radius: 4px;
+  }
+
+  .verified-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    min-width: 1080px;
+  }
+
+  .verified-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--navy);
+    font-weight: 800;
+    text-align: left;
+    padding: 4px 16px 10px;
+    white-space: nowrap;
+  }
+
+  .verified-table td {
+    background: #fff;
+    padding: 16px;
+    font-size: 13.5px;
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    font-weight: 500;
+  }
+
+  .verified-table tr td:first-child {
+    border-left: 1px solid var(--line);
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+
+  .verified-table tr td:last-child {
+    border-right: 1px solid var(--line);
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+
+  /* NOTE: table row hover intentionally disabled */
+
+  /* seller cell */
+  .seller-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 180px;
+  }
+
+  .seller-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    font-family: 'Outfit', sans-serif;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  /* Avatar rotation — yellow + real navy blue only */
+  .verified-table tbody tr:nth-child(5n+1) .seller-avatar {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--navy);
+  }
+  .verified-table tbody tr:nth-child(5n+2) .seller-avatar {
+    background: linear-gradient(135deg, var(--navy), var(--navy-3));
+    color: #ffffff;
+  }
+  .verified-table tbody tr:nth-child(5n+3) .seller-avatar {
+    background: linear-gradient(135deg, var(--yellow-deep), #ca8a04);
+    color: var(--navy);
+  }
+  .verified-table tbody tr:nth-child(5n+4) .seller-avatar {
+    background: linear-gradient(135deg, var(--navy-2), var(--navy));
+    color: #ffffff;
+  }
+  .verified-table tbody tr:nth-child(5n+5) .seller-avatar {
+    background: linear-gradient(135deg, #fbbf24, var(--yellow));
+    color: var(--navy);
+  }
+
+  .seller-name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  /* email & phone */
+  .cell-mono {
+    font-family: 'Plus Jakarta Sans', monospace;
+    font-size: 13px;
+    color: var(--ink-2);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .cell-mono.email { color: var(--navy); font-weight: 600; }
+  .cell-mono.phone { color: var(--ink-2); }
+
+  /* proof link */
+  .proof-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--yellow-soft);
+    color: var(--navy);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    white-space: nowrap;
+  }
+
+  .proof-link:hover {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--navy);
+    border-color: transparent;
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .proof-link i { font-size: 11px; }
+
+  .proof-missing {
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* address */
+  .address-cell {
+    min-width: 200px;
+    line-height: 1.45;
+  }
+
+  .address-place {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 13px;
+  }
+
+  .address-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .address-pin {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--navy);
+    font-weight: 700;
+  }
+
+  .address-pin i { font-size: 10px; color: var(--yellow-deep); }
+
+  /* status pill — approved = green */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .status-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-approved { background: var(--green-soft); color: #166534; }
+  .status-verified { background: var(--green-soft); color: #166534; }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 42px;
+    color: rgba(15, 23, 42, 0.2);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .empty-state h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .empty-state p { font-size: 13.5px; }
+
+  .empty-state a {
+    color: var(--navy);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .empty-state a:hover { text-decoration: underline; }
+
+  /* pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .pagination-info {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .pagination-info strong { color: var(--ink); font-weight: 800; }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .page-btn:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+  }
+
+  .page-btn.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  .page-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  @media (max-width: 720px) {
+    .verified-toolbar { flex-direction: column; align-items: stretch; }
+    .verified-search { flex: 1 1 100%; margin-left: 0; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ================= TOOLBAR ================= -->
+<div class="verified-toolbar">
+
+  <div class="verified-toolbar-left">
+    <span class="verified-tag">
+      <i class="fa-solid fa-circle-check"></i>
+      Only approved sellers are shown here
+    </span>
+  </div>
+
+  <!-- SEARCH BOX (right) -->
+  <div class="verified-search" id="verifiedSearchWrap">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" id="verifiedSearch" placeholder="Search verified sellers…" autocomplete="off">
+    <button type="button" class="verified-search-clear" id="verifiedSearchClear" aria-label="Clear search">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+</div>
+
+<!-- live result info -->
+<div class="search-result-info" id="searchResultInfo">
+  <i class="fa-solid fa-filter"></i>
+  Showing <strong id="matchCount">0</strong> matching sellers
+</div>
+
+<!-- ================= VERIFIED SELLERS TABLE ================= -->
+<div class="verified-panel">
+
+  {% if sellers %}
+  <div class="verified-table-wrap">
+    <table class="verified-table" id="verifiedTable">
+      <thead>
+        <tr>
+          <th>Seller</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Proof</th>
+          <th>Address</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sellers %}
+        <tr>
+
+          <!-- Name + ID -->
+          <td>
+            <div class="seller-cell">
+              <div class="seller-avatar">{{ s.name|slice:":1" }}</div>
+              <div>
+                <div class="seller-name">{{ s.name }}</div>
+                </div>
+            </div>
+          </td>
+
+          <!-- Email -->
+          <td>
+            <div class="cell-mono email">{{ s.email }}</div>
+          </td>
+
+          <!-- Phone -->
+          <td>
+            <div class="cell-mono phone">{{ s.phone }}</div>
+          </td>
+
+          <!-- Proof -->
+          <td>
+            {% if s.proof %}
+              <a href="{{ s.proof }}" target="_blank" class="proof-link">
+                <i class="fa-solid fa-file-shield"></i>
+                View Proof
+              </a>
+            {% else %}
+              <span class="proof-missing">Not uploaded</span>
+            {% endif %}
+          </td>
+
+          <!-- Address -->
+          <td>
+            <div class="address-cell">
+              <div class="address-place">{{ s.place|default:"—" }}</div>
+              <div class="address-meta">{{ s.post|default:"" }}{% if s.post %}, {% endif %}{{ s.district|default:"" }}</div>
+              <div class="address-pin">
+                <i class="fa-solid fa-location-dot"></i>
+                PIN · {{ s.pin|default:"—" }}
+              </div>
+            </div>
+          </td>
+
+          <!-- Status — always approved -->
+          <td>
+            <span class="status-pill status-approved">Approved</span>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing <strong>1–{{ sellers|length }}</strong> of <strong>{{ total_count|default:sellers|length }}</strong> verified sellers
+    </div>
+
+    <div class="pagination-controls">
+      <a href="?page={{ page_obj.previous_page_number }}" class="page-btn {% if not page_obj.has_previous %}disabled{% endif %}">
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+
+      <a href="?page=1" class="page-btn active">1</a>
+      <a href="?page=2" class="page-btn">2</a>
+      <a href="?page=3" class="page-btn">3</a>
+
+      <a href="?page={{ page_obj.next_page_number }}" class="page-btn {% if not page_obj.has_next %}disabled{% endif %}">
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+    </div>
+  </div>
+
+  {% else %}
+
+  <!-- Empty state -->
+  <div class="empty-state">
+    <i class="fa-solid fa-circle-check"></i>
+    <h3>No verified sellers yet</h3>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const input    = document.getElementById('verifiedSearch');
+    const clearBtn = document.getElementById('verifiedSearchClear');
+    const wrap     = document.getElementById('verifiedSearchWrap');
+    const info     = document.getElementById('searchResultInfo');
+    const countEl  = document.getElementById('matchCount');
+    const table    = document.getElementById('verifiedTable');
+
+    if (!input || !table) return;
+
+    const tbody = table.querySelector('tbody');
+
+    const existing = tbody.querySelector('.no-matches-row');
+    if (existing) existing.remove();
+
+    function applyFilter() {
+      const term = input.value.toLowerCase().trim();
+      const rows = tbody.querySelectorAll('tr:not(.no-matches-row)');
+
+      let visible = 0;
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const match = term === '' || text.includes(term);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+
+      wrap.classList.toggle('has-value', term.length > 0);
+
+      if (term.length > 0) {
+        info.classList.add('show');
+        countEl.textContent = visible;
+      } else {
+        info.classList.remove('show');
+      }
+
+      const noMatchRow = tbody.querySelector('.no-matches-row');
+      if (visible === 0 && term.length > 0) {
+        if (!noMatchRow) {
+          const tr = document.createElement('tr');
+          tr.className = 'no-matches-row';
+          tr.innerHTML = `
+            <td colspan="6">
+              <div class="nm-inner">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <strong>No verified sellers match "${term}"</strong>
+                <span style="font-size:12.5px;">Try a different name, email, or phone.</span>
+              </div>
+            </td>`;
+          tbody.appendChild(tr);
+        } else {
+          noMatchRow.querySelector('strong').textContent = `No verified sellers match "${term}"`;
+        }
+      } else if (noMatchRow) {
+        noMatchRow.remove();
+      }
+    }
+
+    input.addEventListener('input', applyFilter);
+
+    clearBtn.addEventListener('click', function () {
+      input.value = '';
+      applyFilter();
+      input.focus();
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        input.value = '';
+        applyFilter();
+      }
+    });
+  })();
+</script>
+{% endblock %}

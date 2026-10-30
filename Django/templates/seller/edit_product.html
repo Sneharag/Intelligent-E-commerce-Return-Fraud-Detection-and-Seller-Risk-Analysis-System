@@ -1,0 +1,1129 @@
+{% extends "seller/seller_dashboard.html" %}
+{% load static %}
+
+{% block title %}Edit Product · ReturnGuard Seller{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Edit Product — page-specific styles only.
+     Colors, layout, buttons come from seller_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  .ap-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .ap-header-left h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ap-header-left p {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 500;
+  }
+
+  .ap-header-left p i { color: var(--emerald-dark); font-size: 12px; }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    background: #ffffff;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    color: var(--ink-2);
+    text-decoration: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    transition: all 0.2s;
+  }
+
+  .btn-back:hover {
+    border-color: var(--yellow);
+    color: var(--emerald-dark);
+    background: var(--yellow-soft);
+  }
+
+  /* grid */
+  .ap-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 22px;
+    align-items: flex-start;
+  }
+
+  @media (max-width: 1000px) {
+    .ap-grid { grid-template-columns: 1fr; }
+  }
+
+  /* card */
+  .ap-card {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ap-card::after {
+    content: "";
+    position: absolute;
+    width: 220px; height: 220px;
+    right: -80px; top: -80px;
+    background: radial-gradient(circle, var(--yellow-soft), transparent 70%);
+    pointer-events: none;
+  }
+
+  .ap-section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-section-title i { color: var(--emerald-dark); font-size: 14px; }
+
+  /* fields */
+  .ap-field {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+
+  .ap-field label .req { color: var(--coral); margin-left: 2px; }
+
+  .ap-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ap-input-wrap > i.field-icon {
+    position: absolute;
+    left: 18px;
+    color: #9ca3af;
+    font-size: 15px;
+    transition: color 0.22s;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ap-input,
+  .ap-textarea {
+    width: 100%;
+    background: #f9fafb;
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 15px 18px;
+    font-size: 15px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.22s ease;
+    letter-spacing: -0.1px;
+    font-weight: 500;
+  }
+
+  .ap-input.with-icon { padding-left: 50px; }
+
+  .ap-textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.55;
+    padding-top: 14px;
+  }
+
+  .ap-input::placeholder,
+  .ap-textarea::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+  }
+
+  .ap-input:hover,
+  .ap-textarea:hover {
+    border-color: rgba(250, 204, 21, 0.5);
+    background: #ffffff;
+  }
+
+  .ap-input:focus,
+  .ap-textarea:focus {
+    border-color: var(--yellow);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .ap-input:focus ~ i.field-icon { color: var(--emerald-dark); }
+
+  /* validation visuals */
+  .ap-input:invalid:not(:placeholder-shown):not(:focus),
+  .ap-textarea:invalid:not(:placeholder-shown):not(:focus) {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
+  }
+
+  .ap-input:valid:not(:placeholder-shown),
+  .ap-textarea:valid:not(:placeholder-shown) {
+    border-color: rgba(5, 150, 105, 0.5);
+  }
+
+  .ap-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+
+  .ap-hint i { font-size: 10.5px; color: var(--yellow-deep); }
+
+  /* price input with ₹ prefix */
+  .ap-price-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ap-price-symbol {
+    position: absolute;
+    left: 18px;
+    color: var(--emerald-dark);
+    font-weight: 800;
+    font-size: 15px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ap-price-wrap .ap-input {
+    padding-left: 40px;
+  }
+
+  /* select dropdown */
+  .ap-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ap-select-wrap > i.field-icon {
+    position: absolute;
+    left: 18px;
+    color: #9ca3af;
+    font-size: 15px;
+    transition: color 0.22s;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ap-select {
+    width: 100%;
+    background: #f9fafb;
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 15px 42px 15px 50px;
+    font-size: 15px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.22s ease;
+    letter-spacing: -0.1px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    font-weight: 500;
+  }
+
+  .ap-select:hover {
+    border-color: rgba(250, 204, 21, 0.5);
+    background: #ffffff;
+  }
+
+  .ap-select:focus {
+    border-color: var(--yellow);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .ap-select-wrap:focus-within > i.field-icon { color: var(--emerald-dark); }
+
+  /* custom chevron */
+  .ap-select-wrap::after {
+    content: "\f078";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 18px;
+    color: #9ca3af;
+    font-size: 11px;
+    pointer-events: none;
+    transition: color 0.22s;
+  }
+
+  .ap-select-wrap:focus-within::after { color: var(--emerald-dark); }
+
+  /* three-column row */
+  .ap-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+  }
+
+  @media (max-width: 760px) {
+    .ap-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 560px) {
+    .ap-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── image upload zone ── */
+  .upload-zone {
+    position: relative;
+    border: 2px dashed rgba(250, 204, 21, 0.5);
+    border-radius: 18px;
+    padding: 26px 20px;
+    text-align: center;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.25s;
+    z-index: 2;
+  }
+
+  .upload-zone:hover { border-color: var(--yellow-deep); background: var(--yellow-soft); }
+
+  .upload-zone.dragover {
+    border-color: var(--yellow-deep);
+    background: var(--yellow-soft);
+    transform: scale(1.01);
+  }
+
+  .upload-zone.has-file {
+    border-color: var(--emerald);
+    border-style: solid;
+    background: var(--emerald-soft);
+    padding: 16px;
+  }
+
+  .upload-zone.has-current {
+    border-color: var(--emerald);
+    border-style: solid;
+    background: var(--emerald-soft);
+    padding: 16px;
+  }
+
+  .upload-zone input[type="file"] { display: none; }
+
+  .upload-icon {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: var(--yellow-soft);
+    color: var(--emerald-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 12px;
+    transition: all 0.25s;
+  }
+
+  .upload-zone.has-file .upload-icon,
+  .upload-zone.has-current .upload-icon {
+    background: rgba(5, 150, 105, 0.15);
+    color: var(--emerald);
+  }
+
+  .upload-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .upload-sub { font-size: 12.5px; color: var(--muted); }
+  .upload-sub strong { color: var(--emerald-dark); font-weight: 800; }
+
+  .upload-preview {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .upload-zone.has-file .upload-preview { display: flex; }
+  .upload-zone.has-file .upload-default { display: none; }
+  .upload-zone.has-file .upload-current { display: none !important; }
+
+  .upload-preview-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 8px 16px -6px rgba(15, 23, 42, 0.15);
+    flex-shrink: 0;
+  }
+
+  .upload-preview-info { flex: 1; min-width: 0; }
+
+  .upload-preview-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+    word-break: break-all;
+    margin-bottom: 3px;
+  }
+
+  .upload-preview-size {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .upload-remove {
+    background: #ffffff;
+    border: 1.5px solid var(--line);
+    color: var(--coral);
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .upload-remove:hover {
+    background: var(--coral-soft);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: scale(1.05);
+  }
+
+  /* actions */
+  .ap-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--emerald-dark);
+    border: none;
+    padding: 14px 26px;
+    border-radius: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 15px 30px -8px rgba(250, 204, 21, 0.5);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 32px -10px rgba(250, 204, 21, 0.6);
+  }
+
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: #f9fafb;
+    color: var(--ink-2);
+    border: 1.5px solid var(--line);
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--emerald); color: var(--emerald-dark); background: var(--emerald-soft); }
+
+  /* right side help panel */
+  .ap-side {
+    background: linear-gradient(155deg, var(--yellow-soft) 0%, #ffffff 60%, var(--emerald-soft) 100%);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    border-radius: 22px;
+    padding: 26px 26px 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.4);
+  }
+
+  .ap-side::after {
+    content: "";
+    position: absolute;
+    width: 200px; height: 200px;
+    right: -70px; bottom: -70px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.22), transparent 70%);
+    pointer-events: none;
+  }
+
+  .ap-side-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--emerald-dark);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-side-title i { color: var(--yellow-deep); font-size: 14px; }
+
+  .ap-side-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-side-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    font-weight: 500;
+  }
+
+  .ap-side-list li i {
+    font-size: 12px;
+    color: var(--emerald-dark);
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  /* live checklist */
+  .ap-reqs {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px dashed rgba(250, 204, 21, 0.5);
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-reqs-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 800;
+    color: var(--emerald-dark);
+    margin-bottom: 12px;
+  }
+
+  .ap-req-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--ink-2);
+    padding: 5px 0;
+    transition: color 0.2s;
+    font-weight: 500;
+  }
+
+  .ap-req-item i {
+    font-size: 13px;
+    color: rgba(5, 150, 105, 0.35);
+    width: 16px;
+    text-align: center;
+    transition: color 0.2s;
+  }
+
+  .ap-req-item.pass { color: var(--emerald-dark); font-weight: 700; }
+  .ap-req-item.pass i { color: var(--emerald); }
+
+  @media (max-width: 500px) {
+    .ap-card { padding: 24px 20px; }
+    .ap-side { padding: 22px 20px 18px; }
+  }
+
+  /* ── edit-specific ── */
+  .ap-edit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--yellow-soft);
+    color: var(--emerald-dark);
+    border: 1px solid rgba(250, 204, 21, 0.5);
+    border-radius: 40px;
+    padding: 4px 12px 4px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  .ap-edit-badge i {
+    font-size: 11px;
+  }
+
+  /* current image note */
+  .current-image-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--yellow-soft);
+    border-radius: 12px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    border: 1px solid rgba(250, 204, 21, 0.4);
+    font-weight: 500;
+  }
+
+  .current-image-note i {
+    color: var(--emerald-dark);
+    font-size: 13px;
+  }
+
+  .current-image-note strong {
+    color: var(--ink);
+    font-weight: 800;
+  }
+
+  /* current image state (edit mode) */
+  .upload-zone.has-current .upload-default { display: none; }
+
+  .upload-current {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .upload-zone.has-current .upload-current { display: flex; }
+
+  .upload-current-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--emerald-soft);
+    color: var(--emerald-dark);
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    border-radius: 40px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+  }
+
+  .upload-current-badge i { font-size: 10px; }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ============ HEADER ============ -->
+<div class="ap-header">
+  <div class="ap-header-left">
+    <h1>
+      Edit Product
+      <span class="ap-edit-badge">
+        <i class="fa-solid fa-pen"></i> Editing
+      </span>
+    </h1>
+    <p>
+      <i class="fa-solid fa-box"></i>
+      Update the details for
+      <strong style="color: var(--ink); font-weight: 800; margin-left: 3px;">
+        {{ product.name|default:"Product" }}
+      </strong>
+    </p>
+  </div>
+
+  <a href="/myapp/seller_viewproducts" class="btn-back">
+    <i class="fa-solid fa-arrow-left"></i>
+    Back to Products
+  </a>
+</div>
+
+<!-- ============ GRID ============ -->
+<div class="ap-grid">
+
+  <!-- ============ FORM CARD ============ -->
+  <div class="ap-card">
+
+    <div class="ap-section-title">
+      <i class="fa-solid fa-circle-info"></i>
+      Product Details
+    </div>
+
+    <form method="post" action="/myapp/seller_editproductpost"
+          enctype="multipart/form-data" id="editProductForm" novalidate>
+      {% csrf_token %}
+        <input type="hidden" name="id" value="{{ product.id }}">
+      <!-- Name -->
+      <div class="ap-field">
+        <label for="name">Product Name <span class="req">*</span></label>
+        <div class="ap-input-wrap">
+          <i class="fa-solid fa-tag field-icon"></i>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            class="ap-input with-icon"
+            placeholder="e.g. Wireless Earbuds Pro"
+            value="{{ product.name|default:'' }}"
+            required
+            minlength="3"
+            maxlength="150"
+            oninvalid="this.setCustomValidity('Product name must be at least 3 characters')"
+            oninput="this.setCustomValidity('')">
+        </div>
+        <div class="ap-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Keep it clear and descriptive — this is what customers see first.
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="ap-field">
+        <label for="description">Description <span class="req">*</span></label>
+        <textarea
+          id="description"
+          name="description"
+          class="ap-textarea"
+          placeholder="Describe your product — features, specifications, what's in the box..."
+          required
+          minlength="10"
+          maxlength="2000"
+          oninvalid="this.setCustomValidity('Description must be at least 10 characters')"
+          oninput="this.setCustomValidity('')">{{ product.description|default:'' }}</textarea>
+        <div class="ap-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Good descriptions reduce returns. Mention size, material, and key specs.
+        </div>
+      </div>
+
+      <!-- Price + Stock + Status row -->
+      <div class="ap-row">
+
+        <div class="ap-field">
+          <label for="price">Price <span class="req">*</span></label>
+          <div class="ap-price-wrap">
+            <span class="ap-price-symbol">₹</span>
+            <input
+              type="number"
+              id="price"
+              name="price"
+              class="ap-input"
+              placeholder="0.00"
+              value="{{ product.price|default:'' }}"
+              required
+              min="0.01"
+              max="999999"
+              step="0.01"
+              oninvalid="this.setCustomValidity('Enter a valid price greater than 0')"
+              oninput="this.setCustomValidity('')">
+          </div>
+        </div>
+
+        <div class="ap-field">
+          <label for="stock">Stock Quantity <span class="req">*</span></label>
+          <div class="ap-input-wrap">
+            <i class="fa-solid fa-cubes field-icon"></i>
+            <input
+              type="number"
+              id="stock"
+              name="stock"
+              class="ap-input with-icon"
+              placeholder="0"
+              value="{{ product.stock|default:'' }}"
+              required
+              min="0"
+              max="999999"
+              step="1"
+              oninvalid="this.setCustomValidity('Enter a valid stock quantity')"
+              oninput="this.setCustomValidity('')">
+          </div>
+        </div>
+
+        <div class="ap-field">
+          <label for="status">Status <span class="req">*</span></label>
+          <div class="ap-select-wrap">
+            <i class="fa-solid fa-circle-dot field-icon"></i>
+            <select id="status" name="status" class="ap-select" required>
+              <option value="Active" {% if product.status == 'Active' %}selected{% endif %}>Active</option>
+              <option value="Inactive" {% if product.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Image upload (edit mode — not required) -->
+      <div class="ap-field">
+        <label for="image">Product Image</label>
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="image" name="image" accept="image/png,image/jpeg,image/jpg,image/webp">
+
+          <!-- default state -->
+          <div class="upload-default">
+            <div class="upload-icon">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div class="upload-title">Click to upload a new image</div>
+            <div class="upload-sub">PNG, JPG, or WEBP · <strong>max 3 MB</strong></div>
+          </div>
+
+          <!-- preview state (new file selected) -->
+          <div class="upload-preview">
+            <img id="previewImg" src="" alt="" class="upload-preview-img">
+            <div class="upload-preview-info">
+              <div class="upload-preview-name" id="previewName"></div>
+              <div class="upload-preview-size" id="previewSize"></div>
+            </div>
+            <button type="button" class="upload-remove" id="removeImage" title="Remove image">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- current image state (existing image, no new file selected) -->
+          {% if product.image %}
+          <div class="upload-current" id="currentImageBlock">
+            <img src="{{ product.image }}" alt="{{ product.name }}" class="upload-preview-img">
+            <div class="upload-preview-info">
+              <div class="upload-preview-name">{{ product.name|default:"Current image" }}</div>
+              <div class="upload-preview-size">Current image · click to replace</div>
+            </div>
+            <span class="upload-current-badge"><i class="fa-solid fa-check"></i> Current</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="ap-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Use a square image (min 500×500px) on a clean background for best results.
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ap-actions">
+        <a href="/myapp/seller_viewproducts" class="btn-secondary">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </a>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <i class="fa-solid fa-circle-check"></i>
+          Save Changes
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ============ SIDE PANEL ============ -->
+  <div class="ap-side">
+
+    <div class="ap-side-title">
+      <i class="fa-solid fa-lightbulb"></i>
+      Editing Tips
+    </div>
+
+    <ul class="ap-side-list">
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Keep the product name and description accurate — mismatches cause returns.
+      </li>
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Upload a new image only if you want to replace the current one.
+      </li>
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Update stock regularly to avoid cancelled orders.
+      </li>
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Double-check the price before saving — it affects your listing immediately.
+      </li>
+    </ul>
+
+    <!-- live checklist -->
+    <div class="ap-reqs">
+      <div class="ap-reqs-title">Before You Save</div>
+
+      <div class="ap-req-item" id="req-name">
+        <i class="fa-regular fa-circle"></i>
+        <span>Product name entered</span>
+      </div>
+      <div class="ap-req-item" id="req-desc">
+        <i class="fa-regular fa-circle"></i>
+        <span>Description added</span>
+      </div>
+      <div class="ap-req-item" id="req-price">
+        <i class="fa-regular fa-circle"></i>
+        <span>Valid price set</span>
+      </div>
+      <div class="ap-req-item" id="req-stock">
+        <i class="fa-regular fa-circle"></i>
+        <span>Stock quantity set</span>
+      </div>
+      <div class="ap-req-item" id="req-image">
+        <i class="fa-regular fa-circle"></i>
+        <span>Image (new or existing)</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form      = document.getElementById('editProductForm');
+    const zone      = document.getElementById('uploadZone');
+    const input     = document.getElementById('image');
+    const preview   = document.getElementById('previewImg');
+    const prevName  = document.getElementById('previewName');
+    const prevSize  = document.getElementById('previewSize');
+    const removeBtn = document.getElementById('removeImage');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const nameInput  = document.getElementById('name');
+    const descInput  = document.getElementById('description');
+    const priceInput = document.getElementById('price');
+    const stockInput = document.getElementById('stock');
+
+    // ── Requirements checklist ──
+    const reqName  = document.getElementById('req-name');
+    const reqDesc  = document.getElementById('req-desc');
+    const reqPrice = document.getElementById('req-price');
+    const reqStock = document.getElementById('req-stock');
+    const reqImage = document.getElementById('req-image');
+
+    // For edit: treat as "has image" if file selected OR product already has an image
+    const hasExistingImage = {% if product.image %}true{% else %}false{% endif %};
+
+    function setReq(el, pass) {
+      if (!el) return;
+      el.classList.toggle('pass', pass);
+      const icon = el.querySelector('i');
+      icon.className = pass ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+    }
+
+    function updateRequirements() {
+      const nameOk  = nameInput.value.trim().length >= 3;
+      const descOk  = descInput.value.trim().length >= 10;
+      const priceOk = priceInput.value !== '' && Number(priceInput.value) > 0;
+      const stockOk = stockInput.value !== '' && Number(stockInput.value) >= 0;
+      const fileSelected = !!(input.files && input.files[0]);
+      const imageOk = fileSelected || hasExistingImage;
+
+      setReq(reqName,  nameOk);
+      setReq(reqDesc,  descOk);
+      setReq(reqPrice, priceOk);
+      setReq(reqStock, stockOk);
+      setReq(reqImage, imageOk);
+    }
+
+    [nameInput, descInput, priceInput, stockInput].forEach(el => {
+      el.addEventListener('input', updateRequirements);
+    });
+
+    // ── Image upload / preview ──
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function updateFileUI() {
+      const file = input.files && input.files[0];
+
+      if (!file) {
+        zone.classList.remove('has-file');
+        preview.src = '';
+        prevName.textContent = '';
+        prevSize.textContent = '';
+        // restore current image view if it exists
+        if (hasExistingImage) {
+          zone.classList.add('has-current');
+        } else {
+          zone.classList.remove('has-current');
+        }
+        updateRequirements();
+        return;
+      }
+
+      // Size guard — 3 MB
+      if (file.size > 3 * 1024 * 1024) {
+        alert('Image is too large. Maximum size is 3 MB.');
+        input.value = '';
+        zone.classList.remove('has-file');
+        if (hasExistingImage) zone.classList.add('has-current');
+        updateRequirements();
+        return;
+      }
+
+      // Type guard
+      const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!allowed.includes(file.type)) {
+        alert('Please upload a PNG, JPG, or WEBP image.');
+        input.value = '';
+        zone.classList.remove('has-file');
+        if (hasExistingImage) zone.classList.add('has-current');
+        updateRequirements();
+        return;
+      }
+
+      // Preview new file
+      const reader = new FileReader();
+      reader.onload = (e) => { preview.src = e.target.result; };
+      reader.readAsDataURL(file);
+
+      prevName.textContent = file.name;
+      prevSize.textContent = formatBytes(file.size);
+      zone.classList.remove('has-current');
+      zone.classList.add('has-file');
+      updateRequirements();
+    }
+
+    // initial state
+    if (hasExistingImage) {
+      zone.classList.add('has-current');
+    }
+    updateRequirements();
+
+    if (zone && input) {
+      zone.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'INPUT' && !e.target.closest('.upload-remove')) {
+          input.click();
+        }
+      });
+
+      ['dragenter', 'dragover'].forEach(evt => {
+        zone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          zone.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(evt => {
+        zone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          zone.classList.remove('dragover');
+        });
+      });
+
+      zone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length) {
+          input.files = files;
+          updateFileUI();
+        }
+      });
+
+      input.addEventListener('change', updateFileUI);
+    }
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        input.value = '';
+        updateFileUI();
+      });
+    }
+
+    // ── Submit guard ──
+    if (form && submitBtn) {
+      form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          form.reportValidity();
+          return;
+        }
+
+        // For edit: image is optional. No extra file-required check.
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.8';
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+      });
+    }
+
+    // initial state
+    updateRequirements();
+
+    // Ensure the current image note is visible initially (if it exists and no file)
+    const currentNote = document.getElementById('currentImageNote');
+    if (currentNote && hasExistingImage && (!input.files || !input.files[0])) {
+      currentNote.style.display = 'flex';
+    }
+  })();
+</script>
+{% endblock %}

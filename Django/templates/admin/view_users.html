@@ -1,0 +1,658 @@
+{% extends "admin/admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Users · ReturnGuard Admin{% endblock %}
+{% block page_title %}Users{% endblock %}
+{% block page_subtitle %}Registered customers on the platform{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Users page — page-specific styles only.
+     Colors, layout, buttons, pagination, table shell,
+     and status colors come from admin_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  /* ================= TOOLBAR ================= */
+  .users-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .users-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+    transform: translateY(-1px);
+  }
+
+  .filter-chip.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  /* search — right-aligned */
+  .users-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 0 340px;
+    min-width: 220px;
+    margin-left: auto;
+  }
+
+  .users-search i {
+    position: absolute;
+    left: 15px;
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .users-search input {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 18px 12px 42px;
+    font-size: 14.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.15);
+  }
+
+  .users-search input::placeholder { color: #9ca3af; font-weight: 400; }
+
+  .users-search input:focus {
+    border-color: var(--yellow);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .users-search input:focus ~ i { color: var(--navy); }
+
+  /* ================= PANEL ================= */
+  .users-panel {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 26px;
+    box-shadow: 0 6px 20px -14px rgba(15, 23, 42, 0.1);
+  }
+
+  .users-table-wrap {
+    overflow-x: auto;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+
+  .users-table-wrap::-webkit-scrollbar { height: 8px; }
+  .users-table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .users-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+    border-radius: 4px;
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    min-width: 900px;
+  }
+
+  .users-table th {
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--navy);
+    font-weight: 800;
+    text-align: left;
+    padding: 6px 18px 12px;
+    white-space: nowrap;
+  }
+
+  .users-table td {
+    background: #fff;
+    padding: 18px;
+    font-size: 15px;
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .users-table tr td:first-child {
+    border-left: 1px solid var(--line);
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+
+  .users-table tr td:last-child {
+    border-right: 1px solid var(--line);
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+
+  /* NOTE: table row hover intentionally disabled */
+
+  /* user cell */
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 200px;
+  }
+
+  .user-cell-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 17px;
+    font-family: 'Outfit', sans-serif;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  /* Avatar rotation — yellow + real navy blue only */
+  .users-table tbody tr:nth-child(5n+1) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--navy);
+  }
+  .users-table tbody tr:nth-child(5n+2) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--navy), var(--navy-3));
+    color: #ffffff;
+  }
+  .users-table tbody tr:nth-child(5n+3) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--yellow-deep), #ca8a04);
+    color: var(--navy);
+  }
+  .users-table tbody tr:nth-child(5n+4) .user-cell-avatar {
+    background: linear-gradient(135deg, var(--navy-2), var(--navy));
+    color: #ffffff;
+  }
+  .users-table tbody tr:nth-child(5n+5) .user-cell-avatar {
+    background: linear-gradient(135deg, #fbbf24, var(--yellow));
+    color: var(--navy);
+  }
+
+  .user-name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 15.5px;
+    line-height: 1.25;
+  }
+
+  /* mono cells */
+  .cell-mono {
+    font-family: 'Plus Jakarta Sans', monospace;
+    font-size: 14.5px;
+    color: var(--ink-2);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .cell-mono.email {
+    color: var(--navy);
+    font-weight: 600;
+  }
+
+  /* address */
+  .address-cell {
+    min-width: 220px;
+    line-height: 1.55;
+  }
+
+  .address-place {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 15px;
+  }
+
+  .address-meta {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .address-pin {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--navy);
+    font-weight: 700;
+  }
+
+  .address-pin i { font-size: 11px; color: var(--yellow-deep); }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 46px;
+    color: rgba(15, 23, 42, 0.2);
+    margin-bottom: 18px;
+    display: block;
+  }
+
+  .empty-state h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .empty-state p { font-size: 14.5px; }
+
+  /* pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .pagination-info {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .pagination-info strong { color: var(--ink); font-weight: 800; }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .page-btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    color: var(--ink-2);
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .page-btn:hover {
+    border-color: var(--yellow-deep);
+    color: var(--navy);
+    background: var(--yellow-soft);
+  }
+
+  .page-btn.active {
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    border-color: transparent;
+    color: var(--navy);
+    box-shadow: 0 8px 18px -8px rgba(250, 204, 21, 0.6);
+  }
+
+  .page-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  @media (max-width: 720px) {
+    .users-toolbar { flex-direction: column; align-items: stretch; }
+    .users-search { flex: 1 1 100%; margin-left: 0; }
+  }
+
+  /* ================= BEHAVIORAL RISK ================= */
+  .risk-meter {
+    min-width: 130px;
+  }
+
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    margin-bottom: 6px;
+  }
+
+  .risk-fraud { background: var(--coral-soft); color: #991b1b; }
+  .risk-warn  { background: var(--amber-soft); color: #92400e; }
+  .risk-safe  { background: var(--green-soft); color: #166534; }
+
+  .risk-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(15, 23, 42, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .risk-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--coral), #b91c1c);
+  }
+
+  .risk-bar.warn > span {
+    background: linear-gradient(90deg, var(--amber), #d97706);
+  }
+
+  .risk-bar.safe > span {
+    background: linear-gradient(90deg, var(--green), #34d399);
+  }
+
+  .risk-pct {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    margin-top: 5px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ================= ACTION ICONS ================= */
+  .actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    text-decoration: none;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+
+  .btn-block {
+    background: var(--coral-soft);
+    color: #991b1b;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .btn-block:hover {
+    background: linear-gradient(135deg, var(--coral), #b91c1c);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 8px 16px -6px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-unblock {
+    background: var(--green-soft);
+    color: #166534;
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  .btn-unblock:hover {
+    background: linear-gradient(135deg, var(--green), #34d399);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 8px 16px -6px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-icon i { font-size: 12.5px; }
+
+  /* user status pill in name cell */
+  .user-blocked-tag {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: var(--coral-soft);
+    color: #991b1b;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ================= TOOLBAR ================= -->
+<div class="users-toolbar">
+
+  <div class="users-toolbar-left">
+    <a href="?sort=recent" class="filter-chip {% if not request.GET.sort or request.GET.sort == 'recent' %}active{% endif %}">
+      <i class="fa-solid fa-clock"></i> Most recent
+    </a>
+    <a href="?sort=name" class="filter-chip {% if request.GET.sort == 'name' %}active{% endif %}">
+      <i class="fa-solid fa-arrow-down-a-z"></i> Name (A–Z)
+    </a>
+    <a href="?sort=orders" class="filter-chip {% if request.GET.sort == 'orders' %}active{% endif %}">
+      <i class="fa-solid fa-chart-simple"></i> Most orders
+    </a>
+  </div>
+
+  <div class="users-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" placeholder="Search users…" id="usersSearch">
+  </div>
+
+</div>
+
+<!-- ================= USERS TABLE ================= -->
+<div class="users-panel">
+
+  {% if users %}
+  <div class="users-table-wrap">
+    <table class="users-table" id="usersTable">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Address</th>
+          <th>Behavioral Risk</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+
+          <!-- Name + ID -->
+          <td>
+            <div class="user-cell">
+              <div class="user-cell-avatar">{{ u.name|slice:":1" }}</div>
+              <div>
+                <div class="user-name">{{ u.name }}</div>
+                   {% if u.status == "blocked" %}<span class="user-blocked-tag">Blocked</span>{% endif %}
+              </div>
+            </div>
+          </td>
+
+          <!-- Email -->
+          <td><div class="cell-mono email">{{ u.email }}</div></td>
+
+          <!-- Phone -->
+          <td><div class="cell-mono">{{ u.phone }}</div></td>
+
+          <!-- Address -->
+                    <!-- Address -->
+          <td>
+            <div class="address-cell">
+              <div class="address-place">{{ u.address.place|default:"—" }}</div>
+              <div class="address-meta">
+                {{ u.address.post|default:"" }}
+              </div>
+              <div class="address-pin">
+                <i class="fa-solid fa-location-dot"></i>
+                PIN · {{ u.address.pin|default:"—" }}
+              </div>
+            </div>
+          </td>
+
+          <!-- Behavioral Risk -->
+          <td>
+            <div class="risk-meter">
+              {% if u.risk_level == "high" %}
+                <div class="risk-badge risk-fraud">
+                  <i class="fa-solid fa-triangle-exclamation"></i> High
+                </div>
+                <div class="risk-bar"><span style="width: {{ u.risk_score }}%;"></span></div>
+              {% elif u.risk_level == "medium" %}
+                <div class="risk-badge risk-warn">
+                  <i class="fa-solid fa-exclamation"></i> Medium
+                </div>
+                <div class="risk-bar warn"><span style="width: {{ u.risk_score }}%;"></span></div>
+              {% else %}
+                <div class="risk-badge risk-safe">
+                  <i class="fa-solid fa-circle-check"></i> Low
+                </div>
+                <div class="risk-bar safe"><span style="width: {{ u.risk_score }}%;"></span></div>
+              {% endif %}
+              <div class="risk-pct">{{ u.risk_score }}% · {{ u.risk_label }}</div>
+            </div>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="actions-cell">
+              {% if u.status == "blocked" %}
+                <a href="/myapp/admin_unblockuser/{{ u.id }}"
+                   class="btn-icon btn-unblock"
+                   title="Unblock this user"
+                   onclick="return confirm('Unblock {{ u.name }}?');">
+                  <i class="fa-solid fa-lock-open"></i>
+                </a>
+              {% else %}
+                <a href="/myapp/admin_blockuser/{{ u.id }}"
+                   class="btn-icon btn-block"
+                   title="Block this user"
+                   onclick="return confirm('Block {{ u.name }}? They will not be able to place new orders or submit returns.');">
+                  <i class="fa-solid fa-lock"></i>
+                </a>
+              {% endif %}
+            </div>
+          </td>
+
+        </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing <strong>1–{{ users|length }}</strong> of <strong>{{ total_users|default:users|length }}</strong> users
+    </div>
+
+    <div class="pagination-controls">
+      <a href="?page={{ page_obj.previous_page_number }}" class="page-btn {% if not page_obj.has_previous %}disabled{% endif %}">
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+      <a href="?page=1" class="page-btn active">1</a>
+      <a href="?page=2" class="page-btn">2</a>
+      <a href="?page=3" class="page-btn">3</a>
+      <a href="?page={{ page_obj.next_page_number }}" class="page-btn {% if not page_obj.has_next %}disabled{% endif %}">
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+    </div>
+  </div>
+
+  {% else %}
+
+  <div class="empty-state">
+    <i class="fa-solid fa-users-slash"></i>
+    <h3>No users yet</h3>
+    <p>Users will appear here as they register on the platform.</p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Live client-side search filter
+  (function () {
+    const input = document.getElementById('usersSearch');
+    const table = document.getElementById('usersTable');
+    if (!input || !table) return;
+
+    input.addEventListener('input', function () {
+      const term = this.value.toLowerCase().trim();
+      const rows = table.querySelectorAll('tbody tr');
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+      });
+    });
+  })();
+</script>
+{% endblock %}

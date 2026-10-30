@@ -1,0 +1,922 @@
+{% extends "seller/seller_dashboard.html" %}
+{% load static %}
+
+{% block title %}Add Product · ReturnGuard Seller{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Add Product — page-specific styles only.
+     Colors, layout, buttons come from seller_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  .ap-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .ap-header-left h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .ap-header-left p {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 500;
+  }
+
+  .ap-header-left p i { color: var(--emerald-dark); font-size: 12px; }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    background: #ffffff;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    color: var(--ink-2);
+    text-decoration: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    transition: all 0.2s;
+  }
+
+  .btn-back:hover {
+    border-color: var(--yellow);
+    color: var(--emerald-dark);
+    background: var(--yellow-soft);
+  }
+
+  /* grid */
+  .ap-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 22px;
+    align-items: flex-start;
+  }
+
+  @media (max-width: 1000px) {
+    .ap-grid { grid-template-columns: 1fr; }
+  }
+
+  /* card */
+  .ap-card {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ap-card::after {
+    content: "";
+    position: absolute;
+    width: 220px; height: 220px;
+    right: -80px; top: -80px;
+    background: radial-gradient(circle, var(--yellow-soft), transparent 70%);
+    pointer-events: none;
+  }
+
+  .ap-section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-section-title i { color: var(--emerald-dark); font-size: 14px; }
+
+  /* fields */
+  .ap-field {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+
+  .ap-field label .req { color: var(--coral); margin-left: 2px; }
+
+  .ap-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ap-input-wrap > i.field-icon {
+    position: absolute;
+    left: 18px;
+    color: #9ca3af;
+    font-size: 15px;
+    transition: color 0.22s;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ap-input,
+  .ap-textarea {
+    width: 100%;
+    background: #f9fafb;
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 15px 18px;
+    font-size: 15px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: all 0.22s ease;
+    letter-spacing: -0.1px;
+    font-weight: 500;
+  }
+
+  .ap-input.with-icon { padding-left: 50px; }
+
+  .ap-textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.55;
+    padding-top: 14px;
+  }
+
+  .ap-input::placeholder,
+  .ap-textarea::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+  }
+
+  .ap-input:hover,
+  .ap-textarea:hover {
+    border-color: rgba(250, 204, 21, 0.5);
+    background: #ffffff;
+  }
+
+  .ap-input:focus,
+  .ap-textarea:focus {
+    border-color: var(--yellow);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.18);
+  }
+
+  .ap-input:focus ~ i.field-icon { color: var(--emerald-dark); }
+
+  /* validation visuals */
+  .ap-input:invalid:not(:placeholder-shown):not(:focus),
+  .ap-textarea:invalid:not(:placeholder-shown):not(:focus) {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
+  }
+
+  .ap-input:valid:not(:placeholder-shown),
+  .ap-textarea:valid:not(:placeholder-shown) {
+    border-color: rgba(5, 150, 105, 0.5);
+  }
+
+  .ap-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+
+  .ap-hint i { font-size: 10.5px; color: var(--yellow-deep); }
+
+  /* price input with ₹ prefix */
+  .ap-price-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ap-price-symbol {
+    position: absolute;
+    left: 18px;
+    color: var(--emerald-dark);
+    font-weight: 800;
+    font-size: 15px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ap-price-wrap .ap-input {
+    padding-left: 40px;
+  }
+
+  /* two-column row */
+  .ap-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  @media (max-width: 560px) {
+    .ap-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── image upload zone ── */
+  .upload-zone {
+    position: relative;
+    border: 2px dashed rgba(250, 204, 21, 0.5);
+    border-radius: 18px;
+    padding: 26px 20px;
+    text-align: center;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.25s;
+    z-index: 2;
+  }
+
+  .upload-zone:hover { border-color: var(--yellow-deep); background: var(--yellow-soft); }
+
+  .upload-zone.dragover {
+    border-color: var(--yellow-deep);
+    background: var(--yellow-soft);
+    transform: scale(1.01);
+  }
+
+  .upload-zone.has-file {
+    border-color: var(--emerald);
+    border-style: solid;
+    background: var(--emerald-soft);
+    padding: 16px;
+  }
+
+  .upload-zone input[type="file"] { display: none; }
+
+  .upload-icon {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: var(--yellow-soft);
+    color: var(--emerald-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 12px;
+    transition: all 0.25s;
+  }
+
+  .upload-zone.has-file .upload-icon {
+    background: rgba(5, 150, 105, 0.15);
+    color: var(--emerald);
+  }
+
+  .upload-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .upload-sub { font-size: 12.5px; color: var(--muted); }
+  .upload-sub strong { color: var(--emerald-dark); font-weight: 800; }
+
+  .upload-preview {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .upload-zone.has-file .upload-preview { display: flex; }
+  .upload-zone.has-file .upload-default { display: none; }
+
+  .upload-preview-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 8px 16px -6px rgba(15, 23, 42, 0.15);
+    flex-shrink: 0;
+  }
+
+  .upload-preview-info { flex: 1; min-width: 0; }
+
+  .upload-preview-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+    word-break: break-all;
+    margin-bottom: 3px;
+  }
+
+  .upload-preview-size {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .upload-remove {
+    background: #ffffff;
+    border: 1.5px solid var(--line);
+    color: var(--coral);
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .upload-remove:hover {
+    background: var(--coral-soft);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: scale(1.05);
+  }
+
+  /* actions */
+  .ap-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--emerald-dark);
+    border: none;
+    padding: 14px 26px;
+    border-radius: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 15px 30px -8px rgba(250, 204, 21, 0.5);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 32px -10px rgba(250, 204, 21, 0.6);
+  }
+
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: #f9fafb;
+    color: var(--ink-2);
+    border: 1.5px solid var(--line);
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--emerald); color: var(--emerald-dark); background: var(--emerald-soft); }
+
+  /* right side help panel */
+  .ap-side {
+    background: linear-gradient(155deg, var(--yellow-soft) 0%, #ffffff 60%, var(--emerald-soft) 100%);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    border-radius: 22px;
+    padding: 26px 26px 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.4);
+  }
+
+  .ap-side::after {
+    content: "";
+    position: absolute;
+    width: 200px; height: 200px;
+    right: -70px; bottom: -70px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.22), transparent 70%);
+    pointer-events: none;
+  }
+
+  .ap-side-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--emerald-dark);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-side-title i { color: var(--yellow-deep); font-size: 14px; }
+
+  .ap-side-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-side-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    font-weight: 500;
+  }
+
+  .ap-side-list li i {
+    font-size: 12px;
+    color: var(--emerald-dark);
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  /* live checklist */
+  .ap-reqs {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px dashed rgba(250, 204, 21, 0.5);
+    position: relative;
+    z-index: 2;
+  }
+
+  .ap-reqs-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 800;
+    color: var(--emerald-dark);
+    margin-bottom: 12px;
+  }
+
+  .ap-req-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--ink-2);
+    padding: 5px 0;
+    transition: color 0.2s;
+    font-weight: 500;
+  }
+
+  .ap-req-item i {
+    font-size: 13px;
+    color: rgba(5, 150, 105, 0.35);
+    width: 16px;
+    text-align: center;
+    transition: color 0.2s;
+  }
+
+  .ap-req-item.pass { color: var(--emerald-dark); font-weight: 700; }
+  .ap-req-item.pass i { color: var(--emerald); }
+
+  @media (max-width: 500px) {
+    .ap-card { padding: 24px 20px; }
+    .ap-side { padding: 22px 20px 18px; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ============ HEADER ============ -->
+<div class="ap-header">
+  <div class="ap-header-left">
+    <h1>Add Product</h1>
+    <p><i class="fa-solid fa-box"></i> List a new product in your catalog</p>
+  </div>
+
+  <a href="/myapp/seller_viewproducts" class="btn-back">
+    <i class="fa-solid fa-arrow-left"></i>
+    Back to Products
+  </a>
+</div>
+
+<!-- ============ GRID ============ -->
+<div class="ap-grid">
+
+  <!-- ============ FORM CARD ============ -->
+  <div class="ap-card">
+
+    <div class="ap-section-title">
+      <i class="fa-solid fa-circle-info"></i>
+      Product Details
+    </div>
+
+    <form method="post" action="/myapp/seller_addproductpost"
+          enctype="multipart/form-data" id="addProductForm" novalidate>
+      {% csrf_token %}
+
+      <!-- Name -->
+      <div class="ap-field">
+        <label for="name">Product Name <span class="req">*</span></label>
+        <div class="ap-input-wrap">
+          <i class="fa-solid fa-tag field-icon"></i>
+          <input
+  type="text"
+  id="name"
+  name="name"
+  class="ap-input with-icon"
+  placeholder="e.g. Wireless Earbuds Pro"
+  required
+  minlength="3"
+  maxlength="150"
+  pattern="[A-Za-z0-9][A-Za-z0-9 .,'&()+\-/]{2,149}"
+  title="Letters, numbers, spaces and basic punctuation only (3–150 chars)"
+  oninvalid="this.setCustomValidity('Product name must be 3–150 characters (letters, numbers, spaces, and basic punctuation)')"
+  oninput="this.setCustomValidity('')">
+        </div>
+        <div class="ap-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Keep it clear and descriptive — this is what customers see first.
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="ap-field">
+        <label for="description">Description <span class="req">*</span></label>
+        <textarea
+          id="description"
+          name="description"
+          class="ap-textarea"
+          placeholder="Describe your product — features, specifications, what's in the box..."
+          required
+          minlength="10"
+          maxlength="2000"
+          oninvalid="this.setCustomValidity('Description must be at least 10 characters')"
+          oninput="this.setCustomValidity('')"></textarea>
+        <div class="ap-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Good descriptions reduce returns. Mention size, material, and key specs.
+        </div>
+      </div>
+
+      <!-- Price + Stock row -->
+      <div class="ap-row">
+
+        <div class="ap-field">
+          <label for="price">Price <span class="req">*</span></label>
+          <div class="ap-price-wrap">
+            <span class="ap-price-symbol">₹</span>
+            <input
+  type="number"
+  id="price"
+  name="price"
+  class="ap-input"
+  placeholder="0.00"
+  required
+  min="0.01"
+  max="999999"
+  step="0.01"
+  inputmode="decimal"
+  oninvalid="this.setCustomValidity('Enter a valid price between 0.01 and 999999')"
+  oninput="this.setCustomValidity('')">
+          </div>
+        </div>
+
+        <div class="ap-field">
+          <label for="stock">Stock Quantity <span class="req">*</span></label>
+          <div class="ap-input-wrap">
+            <i class="fa-solid fa-cubes field-icon"></i>
+            <input
+  type="number"
+  id="stock"
+  name="stock"
+  class="ap-input with-icon"
+  placeholder="0"
+  required
+  min="0"
+  max="9999"
+  step="1"
+  inputmode="numeric"
+  oninvalid="this.setCustomValidity('Enter a valid stock quantity (whole number, 0–999999)')"
+  oninput="this.setCustomValidity('')">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Image upload -->
+      <div class="ap-field">
+        <label for="image">Product Image <span class="req">*</span></label>
+
+        <div class="upload-zone" id="uploadZone">
+          <input
+            type="file"
+            id="image"
+            name="image"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            required>
+
+          <!-- default state -->
+          <div class="upload-default">
+            <div class="upload-icon">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <div class="upload-title">Click to upload or drag and drop</div>
+            <div class="upload-sub">PNG, JPG, or WEBP · <strong>max 3 MB</strong></div>
+          </div>
+
+          <!-- preview state -->
+          <div class="upload-preview">
+            <img id="previewImg" src="" alt="" class="upload-preview-img">
+            <div class="upload-preview-info">
+              <div class="upload-preview-name" id="previewName"></div>
+              <div class="upload-preview-size" id="previewSize"></div>
+            </div>
+            <button type="button" class="upload-remove" id="removeImage" title="Remove image">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="ap-hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Use a square image (min 500×500px) on a clean background for best results.
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ap-actions">
+        <a href="/myapp/seller_viewproducts" class="btn-secondary">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </a>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <i class="fa-solid fa-circle-check"></i>
+          Add Product
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ============ SIDE PANEL ============ -->
+  <div class="ap-side">
+
+    <div class="ap-side-title">
+      <i class="fa-solid fa-lightbulb"></i>
+      Listing Tips
+    </div>
+
+    <ul class="ap-side-list">
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Use a clear, well-lit product photo — avoid stock photos with watermarks.
+      </li>
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Write descriptions that match the product exactly. Mismatches cause returns.
+      </li>
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Price competitively — check similar products before listing.
+      </li>
+      <li>
+        <i class="fa-solid fa-circle-check"></i>
+        Keep stock levels accurate to avoid cancelled orders.
+      </li>
+    </ul>
+
+    <!-- live checklist -->
+    <div class="ap-reqs">
+      <div class="ap-reqs-title">Before You Publish</div>
+
+      <div class="ap-req-item" id="req-name">
+        <i class="fa-regular fa-circle"></i>
+        <span>Product name entered</span>
+      </div>
+      <div class="ap-req-item" id="req-desc">
+        <i class="fa-regular fa-circle"></i>
+        <span>Description added</span>
+      </div>
+      <div class="ap-req-item" id="req-price">
+        <i class="fa-regular fa-circle"></i>
+        <span>Valid price set</span>
+      </div>
+      <div class="ap-req-item" id="req-stock">
+        <i class="fa-regular fa-circle"></i>
+        <span>Stock quantity set</span>
+      </div>
+      <div class="ap-req-item" id="req-image">
+        <i class="fa-regular fa-circle"></i>
+        <span>Image uploaded</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form      = document.getElementById('addProductForm');
+    const zone      = document.getElementById('uploadZone');
+    const input     = document.getElementById('image');
+    const preview   = document.getElementById('previewImg');
+    const prevName  = document.getElementById('previewName');
+    const prevSize  = document.getElementById('previewSize');
+    const removeBtn = document.getElementById('removeImage');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const nameInput  = document.getElementById('name');
+    const descInput  = document.getElementById('description');
+    const priceInput = document.getElementById('price');
+    const stockInput = document.getElementById('stock');
+
+    // ── Requirements checklist ──
+    const reqName  = document.getElementById('req-name');
+    const reqDesc  = document.getElementById('req-desc');
+    const reqPrice = document.getElementById('req-price');
+    const reqStock = document.getElementById('req-stock');
+    const reqImage = document.getElementById('req-image');
+
+    function setReq(el, pass) {
+      if (!el) return;
+      el.classList.toggle('pass', pass);
+      const icon = el.querySelector('i');
+      icon.className = pass ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+    }
+
+    function updateRequirements() {
+      setReq(reqName,  nameInput.value.trim().length >= 3);
+      setReq(reqDesc,  descInput.value.trim().length >= 10);
+      setReq(reqPrice, priceInput.value !== '' && Number(priceInput.value) > 0);
+      setReq(reqStock, stockInput.value !== '' && Number(stockInput.value) >= 0);
+      setReq(reqImage, !!(input.files && input.files[0]));
+    }
+
+    [nameInput, descInput, priceInput, stockInput].forEach(el => {
+      el.addEventListener('input', updateRequirements);
+    });
+
+    // ── Image upload / preview ──
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function updateFileUI() {
+      const file = input.files && input.files[0];
+
+      if (!file) {
+        zone.classList.remove('has-file');
+        preview.src = '';
+        prevName.textContent = '';
+        prevSize.textContent = '';
+        updateRequirements();
+        return;
+      }
+
+      // Size guard — 3 MB
+      if (file.size > 3 * 1024 * 1024) {
+        alert('Image is too large. Maximum size is 3 MB.');
+        input.value = '';
+        zone.classList.remove('has-file');
+        updateRequirements();
+        return;
+      }
+
+      // Type guard
+      const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!allowed.includes(file.type)) {
+        alert('Please upload a PNG, JPG, or WEBP image.');
+        input.value = '';
+        zone.classList.remove('has-file');
+        updateRequirements();
+        return;
+      }
+
+      // Preview
+      const reader = new FileReader();
+      reader.onload = (e) => { preview.src = e.target.result; };
+      reader.readAsDataURL(file);
+
+      prevName.textContent = file.name;
+      prevSize.textContent = formatBytes(file.size);
+      zone.classList.add('has-file');
+      updateRequirements();
+    }
+
+    if (zone && input) {
+      zone.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'INPUT' && !e.target.closest('.upload-remove')) {
+          input.click();
+        }
+      });
+
+      ['dragenter', 'dragover'].forEach(evt => {
+        zone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          zone.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(evt => {
+        zone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          zone.classList.remove('dragover');
+        });
+      });
+
+      zone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length) {
+          input.files = files;
+          updateFileUI();
+        }
+      });
+
+      input.addEventListener('change', updateFileUI);
+    }
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        input.value = '';
+        updateFileUI();
+      });
+    }
+
+    // ── Submit guard ──
+    if (form && submitBtn) {
+      form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          form.reportValidity();
+          return;
+        }
+
+        // Extra belt-and-braces check: file required
+        if (!input.files || !input.files[0]) {
+          e.preventDefault();
+          alert('Please upload a product image.');
+          zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.8';
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adding…';
+      });
+    }
+
+    // initial state
+    updateRequirements();
+  })();
+</script>
+{% endblock %}

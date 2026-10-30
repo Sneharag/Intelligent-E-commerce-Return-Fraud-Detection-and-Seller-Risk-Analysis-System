@@ -1,0 +1,789 @@
+{% extends "seller/seller_dashboard.html" %}
+{% load static %}
+
+{% block title %}Sales & Reports · ReturnGuard Seller{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ─────────────────────────────────────────────
+     Seller Sales & Report — page-specific styles only.
+     Colors come from seller_dashboard.html.
+     ───────────────────────────────────────────── */
+
+  /* header */
+  .sr-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .sr-header-left h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .sr-header-left p {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 500;
+  }
+
+  .sr-header-left p i { color: var(--emerald-dark); font-size: 12px; }
+
+  /* 🆕 header actions — CSV + PDF buttons side by side */
+  .sr-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* download button */
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 22px;
+    background: linear-gradient(135deg, var(--yellow), var(--yellow-deep));
+    color: var(--emerald-dark);
+    border: none;
+    border-radius: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 13.5px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 15px 30px -8px rgba(250, 204, 21, 0.5);
+    transition: all 0.25s;
+    white-space: nowrap;
+  }
+
+  .btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 32px -10px rgba(250, 204, 21, 0.6);
+  }
+
+  .btn-download i { font-size: 14px; }
+
+  /* 🆕 PDF button — subtle emerald outline style */
+  .btn-download.pdf {
+    background: #ffffff;
+    color: var(--emerald-dark);
+    border: 1.5px solid var(--emerald);
+    box-shadow: 0 8px 20px -10px rgba(5, 150, 105, 0.35);
+  }
+
+  .btn-download.pdf:hover {
+    background: linear-gradient(135deg, var(--emerald), var(--emerald-3));
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 16px 28px -10px rgba(5, 150, 105, 0.5);
+  }
+
+  /* ─────────── summary stat cards ─────────── */
+  .sr-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  @media (max-width: 1000px) { .sr-stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px)  { .sr-stats { grid-template-columns: 1fr; } }
+
+  .sr-stat {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.25);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .sr-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px -16px rgba(5, 150, 105, 0.35);
+  }
+
+  .sr-stat::after {
+    content: "";
+    position: absolute;
+    width: 140px; height: 140px;
+    right: -50px; top: -50px;
+    background: radial-gradient(circle, var(--yellow-soft), transparent 70%);
+    pointer-events: none;
+  }
+
+  .sr-stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--yellow-soft);
+    color: var(--emerald-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .sr-stat-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .sr-stat-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.8px;
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 6px;
+  }
+
+  .sr-stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sr-stat-sub i { font-size: 10.5px; }
+
+  /* per-card color accents */
+  .sr-stat.green .sr-stat-icon { background: var(--emerald-soft); color: var(--emerald); }
+  .sr-stat.green::after { background: radial-gradient(circle, var(--emerald-soft), transparent 70%); }
+
+  .sr-stat.sky .sr-stat-icon { background: var(--sky-soft); color: var(--sky); }
+  .sr-stat.sky::after { background: radial-gradient(circle, var(--sky-soft), transparent 70%); }
+
+  .sr-stat.amber .sr-stat-icon { background: var(--amber-soft); color: #92400e; }
+  .sr-stat.amber::after { background: radial-gradient(circle, var(--amber-soft), transparent 70%); }
+
+  /* ─────────── filter bar ─────────── */
+  /* 🆕 5-column grid now: search + status + start + end + reset */
+  .sr-filters {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 1fr 180px 170px 170px auto;
+    gap: 14px;
+    align-items: end;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.2);
+  }
+
+  @media (max-width: 1100px) {
+    .sr-filters { grid-template-columns: 1fr 1fr; }
+    .sr-filters .sr-search { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 560px) {
+    .sr-filters { grid-template-columns: 1fr; }
+  }
+
+  .sr-filter-field { display: flex; flex-direction: column; gap: 6px; }
+
+  .sr-filter-field label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .sr-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .sr-search > i {
+    position: absolute;
+    left: 14px;
+    color: #9ca3af;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .sr-search input,
+  .sr-filter-field input[type="date"],
+  .sr-filter-field select {
+    width: 100%;
+    background: #ffffff;
+    border: 1.5px solid var(--line);
+    border-radius: 11px;
+    padding: 10px 14px 10px 38px;
+    font-size: 13px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--ink);
+    outline: none;
+    font-weight: 500;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .sr-filter-field input[type="date"],
+  .sr-filter-field select {
+    padding-left: 14px;
+  }
+
+  /* 🆕 nicer dropdown appearance */
+  .sr-filter-field select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378716C' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+
+  .sr-search input:focus,
+  .sr-filter-field input[type="date"]:focus,
+  .sr-filter-field select:focus {
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15);
+  }
+
+  .sr-filters .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 16px;
+    background: #f9fafb;
+    color: var(--ink-2);
+    border: 1.5px solid var(--line);
+    border-radius: 11px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sr-filters .btn-reset:hover {
+    border-color: var(--emerald);
+    color: var(--emerald-dark);
+    background: var(--emerald-soft);
+  }
+
+  /* ─────────── result info ─────────── */
+  .sr-result-info {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sr-result-info strong { color: var(--emerald-dark); font-weight: 800; }
+  .sr-result-info i { font-size: 11px; color: var(--yellow-deep); }
+
+  /* ─────────── table panel ─────────── */
+  .sr-panel {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 22px;
+    box-shadow: 0 8px 24px -20px rgba(5, 150, 105, 0.25);
+    overflow: hidden;
+  }
+
+  .sr-table-wrap {
+    overflow-x: auto;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+
+  .sr-table-wrap::-webkit-scrollbar { height: 8px; }
+  .sr-table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .sr-table-wrap::-webkit-scrollbar-thumb {
+    background: var(--emerald-soft);
+    border-radius: 4px;
+  }
+
+  .sr-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    min-width: 1000px;
+  }
+
+  .sr-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--emerald-dark);
+    font-weight: 800;
+    text-align: left;
+    padding: 4px 16px 10px;
+    white-space: nowrap;
+  }
+
+  .sr-table td {
+    background: #f9fafb;
+    padding: 16px;
+    font-size: 13.5px;
+    color: var(--ink);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    font-weight: 500;
+  }
+
+  .sr-table tr td:first-child {
+    border-left: 1px solid var(--line);
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+
+  .sr-table tr td:last-child {
+    border-right: 1px solid var(--line);
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+
+  /* cell styles */
+  .sr-order-id {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    color: var(--ink);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .sr-customer {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 13.5px;
+  }
+
+  .sr-product {
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.45;
+    max-width: 260px;
+  }
+
+  .sr-product strong { color: var(--ink); font-weight: 700; }
+
+  .sr-amount {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 14.5px;
+    color: var(--emerald-dark);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+
+  .sr-qty {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* status pills */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .status-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-paid, .status-delivered { background: var(--emerald-soft); color: var(--emerald-dark); }
+  .status-pending { background: var(--amber-soft); color: #92400e; }
+  .status-shipped { background: var(--sky-soft); color: #0369a1; }
+  .status-pickup  { background: var(--yellow-soft); color: var(--emerald-dark); }
+  .status-failed  { background: var(--coral-soft); color: var(--coral); }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state i {
+    font-size: 44px;
+    color: rgba(5, 150, 105, 0.3);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .empty-state h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .empty-state p { font-size: 13.5px; margin-bottom: 0; }
+
+  /* no matches row */
+  .no-matches-row td {
+    background: var(--yellow-soft) !important;
+    text-align: center;
+    padding: 40px 20px !important;
+    border-radius: 14px;
+  }
+
+  .no-matches-row .nm-inner {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+
+  .no-matches-row .nm-inner i { font-size: 28px; color: rgba(5, 150, 105, 0.4); }
+
+  .no-matches-row .nm-inner strong {
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<!-- ============ HEADER ============ -->
+<div class="sr-header">
+  <div class="sr-header-left">
+    <h1>Sales & Reports</h1>
+    <p><i class="fa-solid fa-chart-line"></i> Track your sales performance and download reports</p>
+  </div>
+
+  <!-- 🆕 two buttons side by side: CSV + PDF -->
+  <div class="sr-header-actions">
+    <a href="/myapp/seller_downloadsalesreport?q={{ search_query|urlencode }}&start={{ start_date|urlencode }}&end={{ end_date|urlencode }}&status={{ status_filter|urlencode }}"
+       class="btn-download">
+      <i class="fa-solid fa-file-csv"></i>
+      CSV
+    </a>
+
+    <a href="/myapp/seller_downloadsalespdf?q={{ search_query|urlencode }}&start={{ start_date|urlencode }}&end={{ end_date|urlencode }}&status={{ status_filter|urlencode }}"
+       class="btn-download pdf" target="_blank">
+      <i class="fa-solid fa-file-pdf"></i>
+      PDF
+    </a>
+  </div>
+</div>
+
+<!-- ============ SUMMARY STAT CARDS ============ -->
+<div class="sr-stats">
+
+  <div class="sr-stat green">
+    <div class="sr-stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+    <div class="sr-stat-label">Total Revenue</div>
+    <div class="sr-stat-value">₹{{ total_revenue|default:"0" }}</div>
+    <div class="sr-stat-sub">
+      <i class="fa-solid fa-circle-check"></i>
+      From {{ paid_orders|default:"0" }} paid orders
+    </div>
+  </div>
+
+  <div class="sr-stat sky">
+    <div class="sr-stat-icon"><i class="fa-solid fa-box"></i></div>
+    <div class="sr-stat-label">Items Sold</div>
+    <div class="sr-stat-value">{{ items_sold|default:"0" }}</div>
+    <div class="sr-stat-sub">
+      <i class="fa-solid fa-cube"></i>
+      Across {{ total_orders|default:"0" }} orders
+    </div>
+  </div>
+
+  <div class="sr-stat amber">
+    <div class="sr-stat-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    <div class="sr-stat-label">Pending Payments</div>
+    <div class="sr-stat-value">{{ pending_orders|default:"0" }}</div>
+    <div class="sr-stat-sub">
+      <i class="fa-solid fa-hourglass-half"></i>
+      ₹{{ pending_amount|default:"0" }} awaiting
+    </div>
+  </div>
+
+  <div class="sr-stat">
+    <div class="sr-stat-icon"><i class="fa-solid fa-rotate-left"></i></div>
+    <div class="sr-stat-label">Returns</div>
+    <div class="sr-stat-value">{{ returns_count|default:"0" }}</div>
+    <div class="sr-stat-sub">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      {{ fraud_count|default:"0" }} flagged as fraud
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ FILTER BAR ============ -->
+<form method="GET" action="" id="reportFilterForm" class="sr-filters">
+
+  <div class="sr-filter-field sr-search">
+    <label for="srSearch">Search</label>
+    <div class="sr-search" style="position:relative;">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text"
+             id="srSearch"
+             name="q"
+             placeholder="Order ID, customer, product..."
+             value="{{ search_query|default:'' }}"
+             autocomplete="off">
+    </div>
+  </div>
+
+  <!-- 🆕 Order status filter -->
+  <div class="sr-filter-field">
+    <label for="srStatus">Order Status</label>
+    <select id="srStatus" name="status">
+      <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+      <option value="Pending"   {% if status_filter == 'Pending'   %}selected{% endif %}>Pending</option>
+      <option value="Shipped"   {% if status_filter == 'Shipped'   %}selected{% endif %}>Shipped</option>
+      <option value="Delivered" {% if status_filter == 'Delivered' %}selected{% endif %}>Delivered</option>
+      <option value="Pickup"    {% if status_filter == 'Pickup'    %}selected{% endif %}>Pickup</option>
+      <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+      <option value="Returned"  {% if status_filter == 'Returned'  %}selected{% endif %}>Returned</option>
+    </select>
+  </div>
+
+  <div class="sr-filter-field">
+    <label for="srStart">From Date</label>
+    <input type="date" id="srStart" name="start" value="{{ start_date|default:'' }}">
+  </div>
+
+  <div class="sr-filter-field">
+    <label for="srEnd">To Date</label>
+    <input type="date" id="srEnd" name="end" value="{{ end_date|default:'' }}">
+  </div>
+
+  <button type="button" class="btn-reset" id="srResetBtn">
+    <i class="fa-solid fa-rotate-right"></i> Reset
+  </button>
+
+</form>
+
+<!-- ============ RESULT INFO ============ -->
+<div class="sr-result-info">
+  <i class="fa-solid fa-filter"></i>
+  Showing <strong id="visibleCount">{{ sales|length|default:"0" }}</strong> of
+  <strong>{{ sales|length|default:"0" }}</strong> entries
+</div>
+
+<!-- ============ TABLE PANEL ============ -->
+<div class="sr-panel">
+
+  {% if sales %}
+  <div class="sr-table-wrap">
+    <table class="sr-table" id="srTable">
+      <thead>
+        <tr>
+          <th>Sl No</th>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Amount</th>
+          <th>Payment</th>
+          <th>Order Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in sales %}
+        <tr>
+          <td><span class="sr-order-id">{{ forloop.counter }}</span></td>
+          <td><span class="sr-order-id">#{{ item.order_id }}</span></td>
+          <td><div class="sr-customer">{{ item.customer_name|default:"Customer" }}</div></td>
+          <td>
+            <div class="sr-product">
+              <strong>{{ item.product_name }}</strong>
+              {% if item.seller_name %}
+                <br><span style="font-size:11.5px;color:var(--muted);">Sold by {{ item.seller_name }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td><span class="sr-qty">× {{ item.quantity }}</span></td>
+          <td><span class="sr-amount">₹{{ item.amount }}</span></td>
+          <td>
+            {% if item.payment_status|lower == 'paid' %}
+              <span class="status-pill status-paid">{{ item.payment_status }}</span>
+            {% elif item.payment_status|lower == 'pending' %}
+              <span class="status-pill status-pending">{{ item.payment_status }}</span>
+            {% else %}
+              <span class="status-pill status-failed">{{ item.payment_status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.status == 'Delivered' %}
+              <span class="status-pill status-delivered">Delivered</span>
+            {% elif item.status == 'Shipped' %}
+              <span class="status-pill status-shipped">Shipped</span>
+            {% elif item.status == 'Pickup' %}
+              <span class="status-pill status-pickup">Pickup</span>
+            {% elif item.status == 'Cancelled' %}
+              <span class="status-pill status-failed">Cancelled</span>
+            {% elif item.status == 'Returned' %}
+              <span class="status-pill status-failed">Returned</span>
+            {% else %}
+              <span class="status-pill status-pending">Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;">
+              {{ item.date }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+
+  <div class="empty-state">
+    <i class="fa-solid fa-chart-bar"></i>
+    <h3>No sales data yet</h3>
+    <p>Your sales will appear here once customers purchase your products.</p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form       = document.getElementById('reportFilterForm');
+    const searchBox  = document.getElementById('srSearch');
+    const statusSel  = document.getElementById('srStatus');   // 🆕
+    const startInput = document.getElementById('srStart');
+    const endInput   = document.getElementById('srEnd');
+    const resetBtn   = document.getElementById('srResetBtn');
+    const table      = document.getElementById('srTable');
+    const infoCount  = document.getElementById('visibleCount');
+
+    if (!form) return;
+
+    // Auto-submit on date change
+    if (startInput) startInput.addEventListener('change', () => form.submit());
+    if (endInput)   endInput.addEventListener('change',   () => form.submit());
+
+    // 🆕 Auto-submit on status change
+    if (statusSel) statusSel.addEventListener('change', () => form.submit());
+
+    // Debounce search submit
+    let timer = null;
+    if (searchBox) {
+      searchBox.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => form.submit(), 500);
+      });
+    }
+
+    // Reset button — clears all filters including status
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (searchBox)  searchBox.value = '';
+        if (statusSel)  statusSel.value = '';
+        if (startInput) startInput.value = '';
+        if (endInput)   endInput.value = '';
+        form.submit();
+      });
+    }
+
+    // Live row filter (client-side)
+    if (table && searchBox && infoCount) {
+      const tbody = table.querySelector('tbody');
+      const rows  = tbody.querySelectorAll('tr:not(.no-matches-row)');
+
+      function applyClientFilter() {
+        const term = (searchBox.value || '').toLowerCase().trim();
+        let visible = 0;
+
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          const match = term === '' || text.includes(term);
+          row.style.display = match ? '' : 'none';
+          if (match) visible++;
+        });
+
+        infoCount.textContent = visible;
+
+        let noMatch = tbody.querySelector('.no-matches-row');
+        if (visible === 0 && term.length > 0) {
+          if (!noMatch) {
+            const tr = document.createElement('tr');
+            tr.className = 'no-matches-row';
+            tr.innerHTML = `
+              <td colspan="9">
+                <div class="nm-inner">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <strong>No entries match "${term}"</strong>
+                  <span style="font-size:12.5px;">Try a different keyword.</span>
+                </div>
+              </td>`;
+            tbody.appendChild(tr);
+          } else {
+            noMatch.querySelector('strong').textContent = `No entries match "${term}"`;
+          }
+        } else if (noMatch) {
+          noMatch.remove();
+        }
+      }
+
+      searchBox.addEventListener('input', applyClientFilter);
+      applyClientFilter();
+    }
+  })();
+</script>
+{% endblock %}
